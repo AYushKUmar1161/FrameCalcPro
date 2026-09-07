@@ -1,0 +1,177 @@
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&family=JetBrains+Mono:wght@400;500;600&display=swap');
+@import "tailwindcss";
+
+@theme {
+  --color-brand-50: #fff5f6;
+  --color-brand-100: #ffe8eb;
+  --color-brand-200: #ffd5d9;
+  --color-brand-300: #ffb1b9;
+  --color-brand-400: #ff8591;
+  --color-brand-500: #ff5f6d;
+  --color-brand-600: #e93d4e;
+  --color-brand-700: #c42636;
+  --color-brand-800: #a32230;
+  --color-brand-900: #87202b;
+
+  --color-marigold-50: #fffbf0;
+  --color-marigold-100: #fef6dc;
+  --color-marigold-200: #fde8b0;
+  --color-marigold-300: #fcd579;
+  --color-marigold-400: #ffc371;
+  --color-marigold-500: #f5a83c;
+  --color-marigold-600: #d9861b;
+  --color-marigold-700: #b46313;
+
+  --font-sans: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+  --font-mono: 'JetBrains Mono', ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+}
+
+@layer base {
+  html {
+    @apply antialiased;
+    font-family: var(--font-sans);
+    scroll-behavior: smooth;
+    color-scheme: light dark;
+  }
+
+  body {
+    @apply bg-stone-50/50 text-zinc-900 min-h-screen;
+    background-color: #FAF9F6;
+  }
+
+  .dark body {
+    @apply bg-zinc-950 text-zinc-100;
+  }
+
+  *:focus-visible {
+    @apply outline-2 outline-offset-2 outline-brand-500;
+  }
+
+  /* Refined subtle scrollbar */
+  ::-webkit-scrollbar {
+    width: 6px;
+    height: 6px;
+  }
+  ::-webkit-scrollbar-track {
+    background: transparent;
+  }
+  ::-webkit-scrollbar-thumb {
+    background: #d4d4d8;
+    border-radius: 9999px;
+  }
+  ::-webkit-scrollbar-thumb:hover {
+    background: #a1a1aa;
+  }
+}
+
+@layer utilities {
+  .scrollbar-thin {
+    scrollbar-width: thin;
+  }
+
+  /* Watermelon Marigold Brand Gradients */
+  .bg-wm-gradient {
+    background-color: #FF5F6D;
+    background-image: linear-gradient(120deg, #FF5F6D 0%, #FFC371 100%);
+  }
+
+  .bg-wm-gradient-subtle {
+    background-image: linear-gradient(120deg, rgba(255, 95, 109, 0.08) 0%, rgba(255, 195, 113, 0.12) 100%);
+  }
+
+  .bg-wm-gradient-card {
+    background-image: linear-gradient(135deg, rgba(255, 95, 109, 0.04) 0%, rgba(255, 195, 113, 0.08) 100%);
+  }
+
+  .text-wm-gradient {
+    background: linear-gradient(120deg, #FF5F6D 0%, #FFC371 100%);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+  }
+
+  .border-wm-gradient {
+    border-image: linear-gradient(120deg, #FF5F6D, #FFC371) 1;
+  }
+
+  /* Architectural Blueprint Grid Background */
+  .blueprint-grid {
+    background-size: 32px 32px;
+    background-image:
+      linear-gradient(to right, rgba(24, 24, 27, 0.04) 1px, transparent 1px),
+      linear-gradient(to bottom, rgba(24, 24, 27, 0.04) 1px, transparent 1px);
+  }
+
+  .blueprint-grid-dark {
+    background-size: 32px 32px;
+    background-image:
+      linear-gradient(to right, rgba(255, 255, 255, 0.04) 1px, transparent 1px),
+      linear-gradient(to bottom, rgba(255, 255, 255, 0.04) 1px, transparent 1px);
+  }
+
+  /* Blueprint dot grid */
+  .blueprint-dots {
+    background-image: radial-gradient(rgba(24, 24, 27, 0.1) 1px, transparent 1px);
+    background-size: 24px 24px;
+  }
+
+  /* Architectural ruler tick marks */
+  .ruler-ticks {
+    background-image: repeating-linear-gradient(
+      to right,
+      rgba(24, 24, 27, 0.25) 0,
+      rgba(24, 24, 27, 0.25) 1px,
+      transparent 1px,
+      transparent 16px
+    );
+  }
+
+  /* Tabular figures for financial and dimensional clarity */
+  .tabular-nums {
+    font-variant-numeric: tabular-nums;
+  }
+
+  /* Subtle card lift */
+  .hover-lift {
+    transition: transform 0.2s cubic-bezier(0.16, 1, 0.3, 1), box-shadow 0.2s cubic-bezier(0.16, 1, 0.3, 1);
+  }
+  .hover-lift:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.06), 0 8px 10px -6px rgba(0, 0, 0, 0.03);
+  }
+
+  /* Shimmer skeleton */
+  .skeleton-shimmer {
+    background: linear-gradient(90deg, #f4f4f5 25%, #e4e4e7 50%, #f4f4f5 75%);
+    background-size: 200% 100%;
+    animation: shimmer 1.5s infinite;
+  }
+
+  @keyframes shimmer {
+    0% { background-position: 200% 0; }
+    100% { background-position: -200% 0; }
+  }
+
+  .animate-fade-in {
+    animation: fadeIn 0.35s ease-out;
+  }
+
+  @keyframes fadeIn {
+    from { opacity: 0; transform: translateY(6px); }
+    to { opacity: 1; transform: translateY(0); }
+  }
+}
+
+@media print {
+  .no-print {
+    display: none !important;
+  }
+
+  .print-only {
+    display: block !important;
+  }
+
+  body {
+    background: white !important;
+  }
+}

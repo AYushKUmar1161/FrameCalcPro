@@ -72,7 +72,7 @@ export function PublicLayout() {
       </header>
 
       {/* Main content */}
-      <main className="flex-1">
+      <main className="flex-1 overflow-x-hidden">
         <Outlet />
       </main>
 
@@ -213,11 +213,11 @@ export function LandingPageContent() {
   ]
 
   return (
-    <div className="space-y-24 pb-20">
+    <div className="space-y-24 pb-20 overflow-x-hidden">
       {/* ============================================================
           HERO SECTION with Watermelon Marigold Gradient Background
           ============================================================ */}
-      <section className="relative overflow-hidden border-b border-zinc-200/80 bg-zinc-950 text-white min-h-[640px] flex items-center">
+      <section className="relative w-full overflow-hidden border-b border-zinc-200/80 bg-zinc-950 text-white min-h-[640px] flex items-center">
         {/* The Watermelon Marigold Gradient Background component */}
         <div className="absolute inset-0 opacity-85">
           <GradientBackground className="w-full h-full" />
@@ -228,27 +228,27 @@ export function LandingPageContent() {
         <div className="absolute inset-0 blueprint-grid opacity-25" />
 
         {/* Framing dimension lines / construction blueprint accents */}
-        <div className="absolute top-8 left-8 hidden lg:flex items-center gap-3 text-[11px] font-mono text-white/60 tracking-wider">
+        <div className="absolute top-6 left-6 md:left-8 lg:left-12 hidden lg:flex items-center gap-3 text-[11px] font-mono text-white/60 tracking-wider">
           <div className="h-px w-16 bg-white/40" />
           <span>ELEVATION: 8'-0" HEIGHT</span>
           <div className="h-px w-8 bg-white/40" />
           <span>STUD SPACING: 16" O.C.</span>
         </div>
 
-        <div className="relative mx-auto max-w-7xl px-4 py-20 sm:px-6 lg:py-28 w-full">
-          <div className="grid lg:grid-cols-12 gap-12 items-center">
-            {/* Left Column: Core Value Proposition */}
+        <div className="relative w-full px-4 sm:px-5 md:px-7 lg:px-10 xl:px-12 py-16 sm:py-20 lg:py-24">
+          <div className="grid lg:grid-cols-12 gap-8 xl:gap-12 2xl:gap-16 items-center w-full">
+            {/* Left Column: Core Value Proposition (~58% width) */}
             <div className="lg:col-span-7 space-y-6 text-left">
               <div className="inline-flex items-center gap-2 rounded-full border border-white/20 bg-white/10 px-3.5 py-1.5 text-xs font-semibold tracking-wide backdrop-blur-md text-white shadow-xs">
                 <Sparkles className="h-3.5 w-3.5 text-marigold-300" />
                 <span>Construction Material Estimator</span>
               </div>
 
-              <h1 className="text-4xl sm:text-5xl lg:text-6xl font-extrabold tracking-tight text-white leading-[1.08]">
+              <h1 className="text-4xl sm:text-5xl lg:text-5xl xl:text-6xl font-extrabold tracking-tight text-white leading-[1.08] max-w-3xl">
                 Fast, Accurate Framing Material Takeoffs & Cost Estimates
               </h1>
 
-              <p className="max-w-xl text-base sm:text-lg text-white/85 leading-relaxed font-normal">
+              <p className="max-w-2xl text-base sm:text-lg lg:text-xl text-white/85 leading-relaxed font-normal">
                 Calculate studs, plates, headers, sheathing, and local material costs from your project dimensions in seconds. Built specifically for carpenters, framers, and builders.
               </p>
 
@@ -293,9 +293,9 @@ export function LandingPageContent() {
               </div>
             </div>
 
-            {/* Right Column: Live Estimator Preview Card */}
-            <div className="lg:col-span-5">
-              <div className="relative rounded-2xl border border-white/20 bg-zinc-950/85 p-6 shadow-2xl backdrop-blur-xl space-y-5 text-left">
+            {/* Right Column: Live Estimator Preview Card (~42% width) */}
+            <div className="lg:col-span-5 w-full">
+              <div className="relative w-full rounded-2xl border border-white/20 bg-zinc-950/85 p-6 shadow-2xl backdrop-blur-xl space-y-5 text-left">
                 {/* Header of preview card */}
                 <div className="flex items-center justify-between border-b border-white/10 pb-4">
                   <div className="flex items-center gap-2.5">

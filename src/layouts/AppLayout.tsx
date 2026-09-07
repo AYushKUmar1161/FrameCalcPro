@@ -4,6 +4,7 @@ import {
   Calculator,
   ChevronRight,
   ClipboardList,
+  Cloud,
   Download,
   FolderKanban,
   HelpCircle,
@@ -25,6 +26,7 @@ import {
 import { cn } from '../lib/cn'
 import { useIsMobile } from '../hooks/useMediaQuery'
 import { useProjectContext } from '../context/ProjectContext'
+import { useAuth } from '../context/AuthContext'
 import { useToast } from '../context/ToastContext'
 import { Button } from '../components/ui/Button'
 import { Tooltip } from '../components/ui/Tooltip'
@@ -42,6 +44,7 @@ export function AppLayout() {
   const location = useLocation()
   const navigate = useNavigate()
   const { activeProject: ctxActiveProject, projects, saveProject } = useProjectContext()
+  const { user, setAuthModalOpen } = useAuth()
   const { showToast } = useToast()
 
   // Generate breadcrumb items
@@ -178,12 +181,32 @@ export function AppLayout() {
 
       {/* Bottom status & disclaimer trigger */}
       <div className="border-t border-zinc-100 p-4 space-y-3 bg-stone-50/40">
+        <button
+          onClick={() => setAuthModalOpen(true)}
+          className="w-full flex items-center justify-between rounded-xl border border-zinc-200/80 bg-white p-2.5 text-left hover:border-brand-400 hover:shadow-2xs transition-all cursor-pointer"
+        >
+          <div className="flex items-center gap-2.5 min-w-0">
+            <div className={`flex h-7 w-7 items-center justify-center rounded-lg shrink-0 ${user ? 'bg-emerald-100 text-emerald-700' : 'bg-zinc-100 text-zinc-600'}`}>
+              <Cloud className="h-4 w-4" />
+            </div>
+            <div className="min-w-0">
+              <p className="text-xs font-bold text-zinc-900 truncate">
+                {user ? user.email : 'Cloud Sync & Auth'}
+              </p>
+              <p className="text-[10px] text-zinc-500">
+                {user ? 'Supabase Connected' : 'Sign in / Sync'}
+              </p>
+            </div>
+          </div>
+          <span className={`h-2 w-2 rounded-full shrink-0 ${user ? 'bg-emerald-500 animate-pulse' : 'bg-zinc-300'}`} />
+        </button>
+
         <div className="flex items-center justify-between text-xs text-zinc-500">
           <div className="flex items-center gap-2">
             <span className="h-2 w-2 rounded-full bg-emerald-500 animate-pulse" />
             <span className="text-[11px] font-medium text-zinc-600">Live Auto-Save</span>
           </div>
-          <Tooltip content="All project data and custom line overrides are stored directly in your browser localStorage.">
+          <Tooltip content="All project data and custom line overrides are stored directly in your browser localStorage and synced to Supabase when logged in.">
             <HelpCircle className="h-3.5 w-3.5 text-zinc-400 hover:text-zinc-600 cursor-pointer" />
           </Tooltip>
         </div>
@@ -323,6 +346,19 @@ export function AppLayout() {
                 />
               </>
             )}
+
+            <Tooltip content={user ? `Signed in as ${user.email}` : 'Sign in / Cloud Sync'}>
+              <button
+                onClick={() => setAuthModalOpen(true)}
+                className="flex items-center gap-1.5 h-8 px-2.5 rounded-lg border border-zinc-200 bg-white text-xs font-semibold text-zinc-700 hover:bg-zinc-50 hover:text-zinc-950 transition-colors cursor-pointer"
+                aria-label="Account and cloud sync"
+              >
+                <Cloud className={`h-3.5 w-3.5 ${user ? 'text-emerald-600' : 'text-zinc-400'}`} />
+                <span className="hidden md:inline max-w-[110px] truncate">
+                  {user ? user.email?.split('@')[0] : 'Cloud Sync'}
+                </span>
+              </button>
+            </Tooltip>
 
             <Link to="/projects/new">
               <Button variant="gradient" size="sm" className="shadow-xs ml-1">

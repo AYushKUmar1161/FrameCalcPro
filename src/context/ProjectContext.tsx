@@ -21,6 +21,12 @@ import {
   seedDemoProjectIfNeeded,
   updateProject,
 } from '../services/projectStorage'
+import {
+  fetchProjectsFromCloud,
+  saveProjectToCloud,
+  deleteProjectFromCloud,
+} from '../services/supabaseStorage'
+import { isSupabaseConfigured } from '../services/supabaseClient'
 
 interface ProjectContextValue {
   projects: Project[]
@@ -28,7 +34,9 @@ interface ProjectContextValue {
   estimate: FramingEstimate | null
   loading: boolean
   storageError: boolean
+  isCloudConnected: boolean
   refreshProjects: () => void
+  syncWithCloud: () => Promise<void>
   loadProject: (id: string) => Project | null
   setActiveProject: (project: Project | null) => void
   saveProject: (project: Project) => Project
@@ -45,6 +53,7 @@ export function ProjectProvider({ children }: { children: ReactNode }) {
   const [activeProject, setActiveProject] = useState<Project | null>(null)
   const [loading, setLoading] = useState(true)
   const [storageError, setStorageError] = useState(false)
+  const isCloudConnected = isSupabaseConfigured()
 
   const refreshProjects = useCallback(() => {
     const corrupted = isStorageCorrupted()
@@ -57,10 +66,25 @@ export function ProjectProvider({ children }: { children: ReactNode }) {
     setProjects(getProjects())
   }, [])
 
+  const syncWithCloud = useCallback(async () => {
+    if (!isCloudConnected) return
+    try {
+      const cloudProjects = await fetchProjectsFromCloud()
+      if (cloudProjects.length > 0) {
+        // Save to local storage cache and refresh
+        cloudProjects.forEach((cp) => updateProject(cp))
+        refreshProjects()
+      }
+    } catch (err) {
+      console.warn('Could not sync with Supabase cloud:', err)
+    }
+  }, [isCloudConnected, refreshProjects])
+
   useEffect(() => {
     refreshProjects()
     setLoading(false)
-  }, [refreshProjects])
+    syncWithCloud()
+  }, [refreshProjects, syncWithCloud])
 
   const estimate = useMemo(() => {
     if (!activeProject) return null
@@ -77,17 +101,25 @@ export function ProjectProvider({ children }: { children: ReactNode }) {
     const saved = updateProject(project)
     setActiveProject(saved)
     refreshProjects()
+    // Background cloud sync
+    if (isCloudConnected) {
+      saveProjectToCloud(saved).catch((err) => console.warn('Supabase save error:', err))
+    }
     return saved
-  }, [refreshProjects])
+  }, [isCloudConnected, refreshProjects])
 
   const addProject = useCallback(
     (input: CreateProjectInput) => {
       const project = createProject(input)
       refreshProjects()
       setActiveProject(project)
+      // Background cloud sync
+      if (isCloudConnected) {
+        saveProjectToCloud(project).catch((err) => console.warn('Supabase add error:', err))
+      }
       return project
     },
-    [refreshProjects],
+    [isCloudConnected, refreshProjects],
   )
 
   const removeProject = useCallback(
@@ -95,17 +127,24 @@ export function ProjectProvider({ children }: { children: ReactNode }) {
       deleteProject(id)
       if (activeProject?.id === id) setActiveProject(null)
       refreshProjects()
+      // Background cloud delete
+      if (isCloudConnected) {
+        deleteProjectFromCloud(id).catch((err) => console.warn('Supabase delete error:', err))
+      }
     },
-    [activeProject, refreshProjects],
+    [activeProject, isCloudConnected, refreshProjects],
   )
 
   const copyProject = useCallback(
     (id: string) => {
       const copy = duplicateProject(id)
       refreshProjects()
+      if (copy && isCloudConnected) {
+        saveProjectToCloud(copy).catch((err) => console.warn('Supabase copy sync error:', err))
+      }
       return copy
     },
-    [refreshProjects],
+    [isCloudConnected, refreshProjects],
   )
 
   const getEstimate = useCallback(
@@ -119,7 +158,9 @@ export function ProjectProvider({ children }: { children: ReactNode }) {
     estimate,
     loading,
     storageError,
+    isCloudConnected,
     refreshProjects,
+    syncWithCloud,
     loadProject,
     setActiveProject,
     saveProject,

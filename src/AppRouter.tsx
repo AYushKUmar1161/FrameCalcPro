@@ -13,6 +13,7 @@ import { ExportPage } from './pages/ExportPage'
 import { SettingsPage } from './pages/SettingsPage'
 import { CalculatorPage } from './pages/CalculatorPage'
 import { ToastContainer } from './components/ui/Toast'
+import { AuthModal } from './components/auth/AuthModal'
 
 export function AppRouter() {
   return (
@@ -47,6 +48,7 @@ export function AppRouter() {
         <Route path="*" element={<Navigate to="/" replace />} />
       </Routes>
       <ToastContainer />
+      <AuthModal />
     </>
   )
 }

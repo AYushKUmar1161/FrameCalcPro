@@ -1,3 +1,4 @@
+import timberFrameHouseImg from '@/assets/timber_frame_house.jpg'
 import { HeroRightAnnotations, HeroFloatingAnnotation } from './HeroAnnotations'
 
 export function HeroConstructionVisual() {
@@ -100,7 +101,7 @@ export function HeroConstructionVisual() {
       {/* ── 3. Timber House Framing Image with gradient mask ── */}
       <div className="absolute inset-0 w-full h-full flex items-center justify-center overflow-hidden">
         <img
-          src="/timber_frame_house.jpg"
+          src={timberFrameHouseImg}
           alt="Exposed timber house framing structure showing studs, plates, and roof framing"
           className="w-full h-full object-contain"
           style={{

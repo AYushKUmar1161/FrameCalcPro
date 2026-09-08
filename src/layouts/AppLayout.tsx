@@ -83,8 +83,8 @@ export function AppLayout() {
             <span className="text-base font-extrabold tracking-tight text-zinc-950 flex items-center">
               FrameCalc<span className="text-brand-600">Pro</span>
             </span>
-            <span className="text-[10px] uppercase font-semibold tracking-wider text-zinc-600">
-              Construction SaaS
+            <span className="text-[10px] uppercase font-semibold tracking-wider text-zinc-500">
+              Framing Material Takeoff
             </span>
           </div>
         </Link>
@@ -297,7 +297,7 @@ export function AppLayout() {
           <div className="flex items-center gap-2">
             {activeProject && (
               <>
-                <Tooltip content="Save current project">
+                <Tooltip content="Save current project" position="bottom">
                   <button
                     onClick={handleSave}
                     className="flex h-8 w-8 items-center justify-center rounded-lg border border-zinc-200 text-zinc-600 hover:bg-zinc-50 hover:text-zinc-900 transition-colors cursor-pointer"
@@ -307,7 +307,7 @@ export function AppLayout() {
                   </button>
                 </Tooltip>
 
-                <Tooltip content="Export PDF or CSV">
+                <Tooltip content="Export PDF or CSV" position="bottom">
                   <Link
                     to={`/projects/${activeProject.id}/export`}
                     className="flex h-8 w-8 items-center justify-center rounded-lg border border-zinc-200 text-zinc-600 hover:bg-zinc-50 hover:text-zinc-900 transition-colors cursor-pointer"
@@ -347,7 +347,7 @@ export function AppLayout() {
               </>
             )}
 
-            <Tooltip content={user ? `Signed in as ${user.email}` : 'Sign in / Cloud Sync'}>
+            <Tooltip content={user ? `Signed in as ${user.email}` : 'Sign in / Cloud Sync'} position="bottom">
               <button
                 onClick={() => setAuthModalOpen(true)}
                 className="flex items-center gap-1.5 h-8 px-2.5 rounded-lg border border-zinc-200 bg-white text-xs font-semibold text-zinc-700 hover:bg-zinc-50 hover:text-zinc-950 transition-colors cursor-pointer"

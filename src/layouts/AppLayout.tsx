@@ -1,5 +1,6 @@
 import { useState } from 'react'
 import { Link, NavLink, Outlet, useLocation, useNavigate } from 'react-router-dom'
+import { BrandLogo } from '../components/ui/BrandLogo'
 import {
   Calculator,
   ChevronRight,
@@ -16,7 +17,6 @@ import {
   Package,
   Plus,
   Printer,
-  Ruler,
   Save,
   Settings,
   ShieldAlert,
@@ -75,19 +75,7 @@ export function AppLayout() {
     >
       {/* Brand Header */}
       <div className="flex h-16 items-center justify-between border-b border-zinc-100 px-5">
-        <Link to="/" className="flex items-center gap-3 group">
-          <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-zinc-900 text-white shadow-xs group-hover:bg-brand-600 transition-colors">
-            <Ruler className="h-4.5 w-4.5 text-white" />
-          </div>
-          <div className="flex flex-col">
-            <span className="text-base font-extrabold tracking-tight text-zinc-950 flex items-center">
-              FrameCalc<span className="text-brand-600">Pro</span>
-            </span>
-            <span className="text-[10px] uppercase font-semibold tracking-wider text-zinc-500">
-              Framing Material Takeoff
-            </span>
-          </div>
-        </Link>
+        <BrandLogo to="/" theme="light" size="sm" />
         {isMobile && (
           <button
             onClick={() => setSidebarOpen(false)}

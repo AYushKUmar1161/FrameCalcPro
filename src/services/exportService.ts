@@ -191,7 +191,32 @@ export function getPrintSummaryHtml(
     <div style="font-family: system-ui, -apple-system, sans-serif; max-width: 900px; margin: 0 auto; padding: 24px; color: #18181b;">
       <div style="display: flex; justify-content: space-between; align-items: flex-start; border-bottom: 2px solid #fed7aa; padding-bottom: 12px; margin-bottom: 20px;">
         <div>
-          <h1 style="color: #FF5F6D; margin: 0; font-size: 26px; font-weight: 800; letter-spacing: -0.02em;">FrameCalcPro</h1>
+          <div style="display: flex; align-items: center; gap: 12px; margin-bottom: 8px;">
+            <svg width="36" height="36" viewBox="0 0 100 100" fill="none">
+              <defs>
+                <linearGradient id="printBrandGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+                  <stop offset="0%" stop-color="#FF9D3B" />
+                  <stop offset="55%" stop-color="#FF5F6D" />
+                  <stop offset="100%" stop-color="#FF3823" />
+                </linearGradient>
+              </defs>
+              <g fill="#18181B">
+                <path d="M 48.5 13 L 13 36.5 L 13 87 L 20 87 L 20 40.5 L 48.5 21.8 Z" />
+                <rect x="25.5" y="32.5" width="7" height="54.5" />
+                <rect x="38" y="24" width="7" height="63" />
+              </g>
+              <g fill="url(#printBrandGrad)">
+                <path d="M 51.5 13 L 87 36.5 L 87 87 L 80 87 L 80 40.5 L 51.5 21.8 Z" />
+                <rect x="55" y="24" width="7" height="63" />
+                <rect x="67.5" y="32.5" width="7" height="54.5" />
+                <rect x="55" y="80" width="19.5" height="7" />
+              </g>
+            </svg>
+            <div>
+              <h1 style="color: #18181B; margin: 0; font-size: 22px; font-weight: 900; letter-spacing: -0.02em;">FrameCalc<span style="color: #FF5F6D;">Pro</span></h1>
+              <p style="color: #71717a; margin: 1px 0 0; font-size: 8.5px; font-weight: 700; letter-spacing: 0.18em; text-transform: uppercase;">Framing Material Takeoff</p>
+            </div>
+          </div>
           <h2 style="margin: 4px 0 0; font-size: 18px; font-weight: 700;">${project.name}</h2>
           <p style="color: #71717a; margin: 4px 0 0; font-size: 13px;">${project.projectType.toUpperCase()} · ${project.measurementSystem} · ${project.settings.wastePercent}% Waste Allowance</p>
         </div>

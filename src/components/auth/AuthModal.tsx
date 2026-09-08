@@ -6,6 +6,8 @@ import { Modal } from '../ui/Modal'
 import { Button } from '../ui/Button'
 import { Input } from '../ui/Input'
 
+import { BrandLogo } from '../ui/BrandLogo'
+
 export function AuthModal() {
   const { authModalOpen, setAuthModalOpen, isConfigured, user, signInWithEmail, signUpWithEmail, signOut } = useAuth()
   const { showToast } = useToast()
@@ -104,6 +106,9 @@ export function AuthModal() {
       title={mode === 'signin' ? 'Sign In to FrameCalcPro' : 'Create FrameCalcPro Account'}
     >
       <div className="space-y-4 py-1">
+        <div className="flex justify-center pb-1">
+          <BrandLogo size="md" theme="light" />
+        </div>
         {!isConfigured && (
           <div className="rounded-xl border border-amber-200/90 bg-amber-50/70 p-3 text-xs text-amber-900 flex items-start gap-2">
             <ShieldAlert className="h-4 w-4 text-amber-600 shrink-0 mt-0.5" />

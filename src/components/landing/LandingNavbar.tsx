@@ -1,7 +1,8 @@
 import { useState, useEffect } from 'react'
 import { Link } from 'react-router-dom'
-import { ArrowRight, PanelTopOpen, Menu, X } from 'lucide-react'
+import { ArrowRight, Menu, X } from 'lucide-react'
 import { Button } from '../ui/Button'
+import { BrandLogo } from '../ui/BrandLogo'
 
 export function LandingNavbar() {
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false)
@@ -25,19 +26,7 @@ export function LandingNavbar() {
       <div className="h-full w-full px-5 sm:px-10 lg:px-14 xl:px-16 flex items-center justify-between">
 
         {/* ── LEFT: Logo ── */}
-        <Link to="/" className="flex items-center gap-2.5 sm:gap-3 group shrink-0" aria-label="FrameCalcPro home">
-          <div className="flex h-9 w-9 sm:h-10 sm:w-10 items-center justify-center rounded-xl bg-zinc-950 shadow-sm group-hover:bg-brand-600 transition-colors duration-200">
-            <PanelTopOpen className="h-4.5 w-4.5 sm:h-5 sm:w-5 text-white" />
-          </div>
-          <div className="flex flex-col leading-none">
-            <span className="text-[15px] sm:text-base font-black tracking-tight text-zinc-950">
-              FrameCalc<span className="text-wm-gradient">Pro</span>
-            </span>
-            <span className="text-[9px] sm:text-[10px] uppercase font-semibold tracking-[0.15em] text-zinc-400 mt-0.5">
-              Framing Material Takeoff
-            </span>
-          </div>
-        </Link>
+        <BrandLogo to="/" theme="light" size="md" />
 
         {/* ── CENTER: Navigation links (desktop lg+) ── */}
         <nav

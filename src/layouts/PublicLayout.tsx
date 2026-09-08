@@ -9,10 +9,10 @@ import {
   FileSpreadsheet,
   Layers,
   Percent,
-  Ruler,
   ShieldAlert,
 } from 'lucide-react'
 import { Button } from '../components/ui/Button'
+import { BrandLogo } from '../components/ui/BrandLogo'
 import { DEMO_PROJECT_ID } from '../data/constants'
 import { LandingNavbar, HeroSection } from '../components/landing'
 
@@ -31,19 +31,7 @@ export function PublicLayout() {
       <footer className="border-t border-zinc-200/80 bg-zinc-900 text-zinc-400 py-12">
         <div className="mx-auto max-w-7xl px-4 sm:px-6">
           <div className="flex flex-col md:flex-row items-start md:items-center justify-between gap-6 pb-8 border-b border-zinc-800">
-            <div className="flex items-center gap-3">
-              <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-white/10 text-white">
-                <Ruler className="h-4 w-4" />
-              </div>
-              <div>
-                <span className="text-sm font-bold text-white tracking-wide">
-                  FRAMECALC<span className="text-brand-400">PRO</span>
-                </span>
-                <p className="text-xs text-zinc-500">
-                  Fast, Accurate Framing Material Takeoffs &amp; Cost Estimates
-                </p>
-              </div>
-            </div>
+            <BrandLogo to="/" theme="dark" size="md" />
 
             <div className="flex flex-wrap gap-6 text-xs text-zinc-400">
               <Link to="/calculator" className="hover:text-white transition-colors">

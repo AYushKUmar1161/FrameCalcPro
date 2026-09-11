@@ -206,7 +206,18 @@ export function LandingFooter() {
         {/* Bottom copyright */}
         <div className="pt-6 border-t border-zinc-800/60 flex flex-col sm:flex-row items-center justify-between text-[11px] text-zinc-500 gap-3">
           <p>© {new Date().getFullYear()} FrameCalcPro. All rights reserved.</p>
-          <p>Built for professional builders, carpenters, and general contractors.</p>
+          <div className="flex items-center gap-4">
+            <button
+              type="button"
+              onClick={() => window.dispatchEvent(new CustomEvent('replay-framecalc-intro'))}
+              className="hover:text-coral-400 transition-colors text-zinc-400 font-mono text-[10px] uppercase tracking-wider cursor-pointer"
+              title="Watch the FrameCalcPro cinematic intro experience again"
+            >
+              Replay Cinematic Intro ↻
+            </button>
+            <span className="text-zinc-700">•</span>
+            <p>Built for professional builders, carpenters, and general contractors.</p>
+          </div>
         </div>
       </div>
     </footer>

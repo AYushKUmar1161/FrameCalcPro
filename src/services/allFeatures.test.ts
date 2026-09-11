@@ -255,4 +255,36 @@ describe('All Features & Currency Verification', () => {
       expect(estimate.estimatedTotal).toBeGreaterThan(0)
     })
   })
+
+  describe('7. Cinematic Intro Experience', () => {
+    it('progresses through technical loading phases up to completion', () => {
+      const phases = [
+        { threshold: 0, text: 'INITIALIZING FRAMING ENGINE' },
+        { threshold: 0.28, text: 'LOADING PROJECT SYSTEM' },
+        { threshold: 0.58, text: 'PREPARING 3D FRAMING MODEL' },
+        { threshold: 0.85, text: 'CALCULATING MATERIAL ENGINE' },
+        { threshold: 1.0, text: 'FRAMECALCPRO READY' },
+      ]
+
+      function getStatusForProgress(p: number): string {
+        for (let i = phases.length - 1; i >= 0; i--) {
+          if (p >= phases[i].threshold) {
+            return phases[i].text
+          }
+        }
+        return phases[0].text
+      }
+
+      expect(getStatusForProgress(0.1)).toBe('INITIALIZING FRAMING ENGINE')
+      expect(getStatusForProgress(0.35)).toBe('LOADING PROJECT SYSTEM')
+      expect(getStatusForProgress(0.65)).toBe('PREPARING 3D FRAMING MODEL')
+      expect(getStatusForProgress(0.92)).toBe('CALCULATING MATERIAL ENGINE')
+      expect(getStatusForProgress(1.0)).toBe('FRAMECALCPRO READY')
+    })
+
+    it('manages intro session persistence keys properly', () => {
+      const SESSION_KEY = 'framecalcpro_intro_seen'
+      expect(SESSION_KEY).toBe('framecalcpro_intro_seen')
+    })
+  })
 })

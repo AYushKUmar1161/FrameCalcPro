@@ -1,4 +1,6 @@
-import { Outlet } from 'react-router-dom'
+import { useState, useEffect } from 'react'
+import { Outlet, useSearchParams } from 'react-router-dom'
+import { FrameCalcIntro } from '../components/intro'
 import {
   LandingNavbar,
   HeroSection,
@@ -13,8 +15,49 @@ import {
 } from '../components/landing'
 
 export function PublicLayout() {
+  const [searchParams, setSearchParams] = useSearchParams()
+  const forceIntro = searchParams.get('intro') === '1'
+
+  const [showIntro, setShowIntro] = useState<boolean>(() => {
+    if (typeof window === 'undefined') return false
+    if (forceIntro) return true
+    try {
+      return !sessionStorage.getItem('framecalcpro_intro_seen')
+    } catch {
+      return false
+    }
+  })
+
+  useEffect(() => {
+    // Listen for custom replay event from footer or other links
+    const handleReplay = () => {
+      setShowIntro(true)
+    }
+    window.addEventListener('replay-framecalc-intro', handleReplay)
+    return () => {
+      window.removeEventListener('replay-framecalc-intro', handleReplay)
+    }
+  }, [])
+
+  const handleIntroComplete = () => {
+    setShowIntro(false)
+    if (forceIntro) {
+      // Clean up ?intro=1 param from URL
+      searchParams.delete('intro')
+      setSearchParams(searchParams, { replace: true })
+    }
+  }
+
   return (
     <div className="min-h-screen bg-[#080C14] text-white flex flex-col selection:bg-brand-500/30 selection:text-white antialiased overflow-x-hidden">
+      {/* Cinematic Beginning Introduction Overlay */}
+      {showIntro && (
+        <FrameCalcIntro
+          onComplete={handleIntroComplete}
+          onSkip={handleIntroComplete}
+        />
+      )}
+
       {/* Top Navigation */}
       <LandingNavbar />
 

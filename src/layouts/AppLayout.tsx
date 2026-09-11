@@ -12,6 +12,7 @@ import {
   Home,
   LayoutDashboard,
   Layers,
+  LogOut,
   Menu,
   MoreVertical,
   Package,
@@ -20,7 +21,9 @@ import {
   Save,
   Settings,
   ShieldAlert,
+  ShieldCheck,
   Sparkles,
+  Users,
   X,
 } from 'lucide-react'
 import { cn } from '../lib/cn'
@@ -44,8 +47,13 @@ export function AppLayout() {
   const location = useLocation()
   const navigate = useNavigate()
   const { activeProject: ctxActiveProject, projects, saveProject } = useProjectContext()
-  const { user, setAuthModalOpen, isConfigured } = useAuth()
+  const { user, openAuthModal, isConfigured, signOut } = useAuth()
   const { showToast } = useToast()
+
+  const handleSignOut = async () => {
+    await signOut()
+    showToast('Logged out successfully.', 'info')
+  }
 
   // Generate breadcrumb items
   const pathParts = location.pathname.split('/').filter(Boolean)
@@ -167,27 +175,57 @@ export function AppLayout() {
         )}
       </div>
 
-      {/* Bottom status & disclaimer trigger */}
+      {/* Bottom status & authentication trigger */}
       <div className="border-t border-zinc-100 p-4 space-y-3 bg-stone-50/40">
-        <button
-          onClick={() => setAuthModalOpen(true)}
-          className="w-full flex items-center justify-between rounded-xl border border-zinc-200/80 bg-white p-2.5 text-left hover:border-brand-400 hover:shadow-2xs transition-all cursor-pointer"
-        >
-          <div className="flex items-center gap-2.5 min-w-0">
-            <div className={`flex h-7 w-7 items-center justify-center rounded-lg shrink-0 ${user ? 'bg-emerald-100 text-emerald-700' : 'bg-zinc-100 text-zinc-600'}`}>
-              <Cloud className="h-4 w-4" />
+        <div className="flex items-center justify-between rounded-xl border border-zinc-200/80 bg-white p-2.5 hover:border-brand-400 hover:shadow-2xs transition-all">
+          <button
+            type="button"
+            onClick={() => openAuthModal('signin')}
+            className="flex items-center gap-2.5 min-w-0 flex-1 text-left cursor-pointer"
+            title={user ? 'Open Profile & Security Settings' : 'Sign In or Create Account'}
+          >
+            <div
+              className={`flex h-8 w-8 items-center justify-center rounded-lg shrink-0 ${
+                user
+                  ? 'bg-gradient-to-tr from-brand-500 to-amber-400 text-white font-bold text-xs shadow-xs'
+                  : 'bg-zinc-100 text-zinc-600'
+              }`}
+            >
+              {user ? (
+                (user.user_metadata?.full_name?.[0] || user.email?.[0] || 'U').toUpperCase()
+              ) : (
+                <Cloud className="h-4 w-4" />
+              )}
             </div>
-            <div className="min-w-0">
+            <div className="min-w-0 flex-1">
               <p className="text-xs font-bold text-zinc-900 truncate">
-                {user ? user.email : 'Cloud Sync & Auth'}
+                {user ? user.user_metadata?.full_name || user.email : 'Sign In / Workspace'}
               </p>
-              <p className="text-[10px] text-zinc-500">
-                {user ? (isConfigured ? 'Supabase Connected' : 'Local Workspace Active') : 'Sign In / Workspace'}
+              <p className="text-[10px] text-zinc-500 truncate">
+                {user
+                  ? isConfigured
+                    ? 'Supabase Connected'
+                    : 'Encrypted Vault Active'
+                  : 'Login or Create Account'}
               </p>
             </div>
-          </div>
-          <span className={`h-2 w-2 rounded-full shrink-0 ${user ? 'bg-emerald-500 animate-pulse' : 'bg-zinc-300'}`} />
-        </button>
+          </button>
+
+          {user ? (
+            <Tooltip content="Log out" position="top">
+              <button
+                type="button"
+                onClick={handleSignOut}
+                className="p-1.5 rounded-lg text-zinc-400 hover:text-rose-600 hover:bg-rose-50 transition-colors cursor-pointer shrink-0 ml-1"
+                aria-label="Log out"
+              >
+                <LogOut className="h-3.5 w-3.5" />
+              </button>
+            </Tooltip>
+          ) : (
+            <span className="h-2 w-2 rounded-full shrink-0 bg-zinc-300 ml-1" />
+          )}
+        </div>
 
         <div className="flex items-center justify-between text-xs text-zinc-500">
           <div className="flex items-center gap-2">
@@ -335,18 +373,63 @@ export function AppLayout() {
               </>
             )}
 
-            <Tooltip content={user ? `Signed in as ${user.email}` : 'Sign in / Cloud Sync'} position="bottom">
-              <button
-                onClick={() => setAuthModalOpen(true)}
-                className="flex items-center gap-1.5 h-8 px-2.5 rounded-lg border border-zinc-200 bg-white text-xs font-semibold text-zinc-700 hover:bg-zinc-50 hover:text-zinc-950 transition-colors cursor-pointer"
-                aria-label="Account and cloud sync"
-              >
-                <Cloud className={`h-3.5 w-3.5 ${user ? 'text-emerald-600' : 'text-zinc-400'}`} />
-                <span className="hidden md:inline max-w-[110px] truncate">
-                  {user ? user.email?.split('@')[0] : 'Cloud Sync'}
-                </span>
-              </button>
-            </Tooltip>
+            {user ? (
+              <Dropdown
+                trigger={
+                  <button
+                    className="flex items-center gap-2 h-8 pl-1.5 pr-2.5 rounded-lg border border-zinc-200 bg-white text-xs font-semibold text-zinc-800 hover:border-zinc-300 hover:bg-zinc-50 transition-colors cursor-pointer"
+                    aria-label="User profile menu"
+                  >
+                    <div className="flex h-5 w-5 items-center justify-center rounded-md bg-gradient-to-tr from-brand-500 to-amber-400 text-white font-bold text-[10px]">
+                      {(user.user_metadata?.full_name?.[0] || user.email?.[0] || 'U').toUpperCase()}
+                    </div>
+                    <span className="hidden md:inline max-w-[110px] truncate">
+                      {user.user_metadata?.full_name || user.email?.split('@')[0]}
+                    </span>
+                    <span className="h-1.5 w-1.5 rounded-full bg-emerald-500" />
+                  </button>
+                }
+                items={[
+                  {
+                    label: 'Account & Security',
+                    icon: <ShieldCheck className="h-3.5 w-3.5 text-zinc-500" />,
+                    onClick: () => openAuthModal('signin'),
+                  },
+                  {
+                    label: 'Switch Account',
+                    icon: <Users className="h-3.5 w-3.5 text-zinc-500" />,
+                    onClick: async () => {
+                      await signOut()
+                      openAuthModal('signin')
+                    },
+                  },
+                  {
+                    label: 'Log Out',
+                    icon: <LogOut className="h-3.5 w-3.5 text-rose-500" />,
+                    onClick: handleSignOut,
+                  },
+                ]}
+              />
+            ) : (
+              <div className="flex items-center gap-1.5">
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => openAuthModal('signin')}
+                  className="h-8 text-xs font-semibold px-2.5 cursor-pointer border-zinc-200"
+                >
+                  Sign In
+                </Button>
+                <Button
+                  variant="secondary"
+                  size="sm"
+                  onClick={() => openAuthModal('signup')}
+                  className="h-8 text-xs font-semibold px-2.5 cursor-pointer hidden sm:inline-flex"
+                >
+                  Register
+                </Button>
+              </div>
+            )}
 
             <Link to="/projects/new">
               <Button variant="gradient" size="sm" className="shadow-xs ml-1">

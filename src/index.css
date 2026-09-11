@@ -75,8 +75,22 @@
     background: #d4d4d8;
     border-radius: 9999px;
   }
-  ::-webkit-scrollbar-thumb:hover {
-    background: #a1a1aa;
+  /* Universal Browser Autofill Styling - Prevents dark/slate gray autofill tint */
+  input:-webkit-autofill,
+  input:-webkit-autofill:hover, 
+  input:-webkit-autofill:focus, 
+  input:-webkit-autofill:active {
+    -webkit-box-shadow: 0 0 0 1000px #ffffff inset !important;
+    box-shadow: 0 0 0 1000px #ffffff inset !important;
+    -webkit-text-fill-color: #18181b !important;
+    caret-color: #18181b !important;
+    color: #18181b !important;
+    transition: background-color 50000s ease-in-out 0s;
+  }
+
+  input:-moz-autofill {
+    box-shadow: 0 0 0 1000px #ffffff inset !important;
+    filter: none !important;
   }
 }
 

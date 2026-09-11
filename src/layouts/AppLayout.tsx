@@ -44,7 +44,7 @@ export function AppLayout() {
   const location = useLocation()
   const navigate = useNavigate()
   const { activeProject: ctxActiveProject, projects, saveProject } = useProjectContext()
-  const { user, setAuthModalOpen } = useAuth()
+  const { user, setAuthModalOpen, isConfigured } = useAuth()
   const { showToast } = useToast()
 
   // Generate breadcrumb items
@@ -182,7 +182,7 @@ export function AppLayout() {
                 {user ? user.email : 'Cloud Sync & Auth'}
               </p>
               <p className="text-[10px] text-zinc-500">
-                {user ? 'Supabase Connected' : 'Sign in / Sync'}
+                {user ? (isConfigured ? 'Supabase Connected' : 'Local Workspace Active') : 'Sign In / Workspace'}
               </p>
             </div>
           </div>

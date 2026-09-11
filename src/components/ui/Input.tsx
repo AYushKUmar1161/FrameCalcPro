@@ -44,10 +44,12 @@ export const Input = React.forwardRef<HTMLInputElement, InputProps>(
           <input
             ref={ref}
             id={inputId}
+            style={{ colorScheme: 'light', ...props.style }}
             className={cn(
               'w-full rounded-lg border border-zinc-200 bg-white px-3 py-2 text-sm text-zinc-900 placeholder:text-zinc-400 transition-all duration-150',
               'focus:border-brand-500 focus:outline-hidden focus:ring-3 focus:ring-brand-500/15',
               'disabled:bg-zinc-50 disabled:text-zinc-400 disabled:cursor-not-allowed',
+              'autofill:bg-white autofill:text-zinc-900 autofill:shadow-[inset_0_0_0px_1000px_white]',
               leftIcon ? 'pl-9' : '',
               rightElement ? 'pr-12' : '',
               error ? 'border-rose-400 focus:border-rose-500 focus:ring-rose-500/15 text-rose-900' : '',

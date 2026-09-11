@@ -52,6 +52,7 @@ export function Modal({
         aria-hidden="true"
       />
       <div
+        style={{ colorScheme: 'light' }}
         className={cn(
           'relative w-full my-8 rounded-2xl bg-white shadow-2xl border border-zinc-200/80 overflow-hidden transform transition-all',
           sizes[size],

@@ -1,15 +1,14 @@
 import { useState } from 'react'
-import { Cloud, Lock, Mail, ShieldAlert, UserCheck } from 'lucide-react'
+import { Cloud, Lock, Mail, Sparkles, User, UserCheck } from 'lucide-react'
 import { useAuth } from '../../context/AuthContext'
 import { useToast } from '../../context/ToastContext'
 import { Modal } from '../ui/Modal'
 import { Button } from '../ui/Button'
 import { Input } from '../ui/Input'
-
 import { BrandLogo } from '../ui/BrandLogo'
 
 export function AuthModal() {
-  const { authModalOpen, setAuthModalOpen, isConfigured, user, signInWithEmail, signUpWithEmail, signOut } = useAuth()
+  const { authModalOpen, setAuthModalOpen, isConfigured, user, signInWithEmail, signUpWithEmail, signInAsGuest, signOut } = useAuth()
   const { showToast } = useToast()
 
   const [mode, setMode] = useState<'signin' | 'signup'>('signin')
@@ -21,6 +20,19 @@ export function AuthModal() {
   const handleClose = () => {
     setAuthModalOpen(false)
     setErrorMsg('')
+  }
+
+  const handleGuestSignIn = async () => {
+    setLoading(true)
+    setErrorMsg('')
+    const { error } = await signInAsGuest('estimator@framecalcpro.com')
+    setLoading(false)
+    if (error) {
+      setErrorMsg(error.message)
+    } else {
+      showToast('Signed in as Guest Estimator! Local workspace active.', 'success')
+      handleClose()
+    }
   }
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -54,7 +66,7 @@ export function AuthModal() {
       if (error) {
         setErrorMsg(error.message)
       } else {
-        showToast('Account created! Please check your email for confirmation.', 'success')
+        showToast('Account created and signed in successfully!', 'success')
         handleClose()
       }
     }
@@ -69,7 +81,7 @@ export function AuthModal() {
   // If already logged in, show user profile details
   if (user) {
     return (
-      <Modal open={authModalOpen} onClose={handleClose} title="Cloud Account">
+      <Modal open={authModalOpen} onClose={handleClose} title="Account & Workspace">
         <div className="space-y-4 py-2">
           <div className="flex items-center gap-3 rounded-xl border border-zinc-200/80 bg-stone-50/50 p-4">
             <div className="flex h-10 w-10 items-center justify-center rounded-full bg-emerald-100 text-emerald-700 font-bold">
@@ -83,7 +95,11 @@ export function AuthModal() {
 
           <div className="rounded-xl border border-emerald-200 bg-emerald-50/60 p-3 text-xs text-emerald-800 flex items-start gap-2">
             <Cloud className="h-4 w-4 text-emerald-600 shrink-0 mt-0.5" />
-            <span>Cloud Sync Active: All projects and estimates are synced securely to your Supabase PostgreSQL database.</span>
+            <span>
+              {isConfigured
+                ? 'Cloud Sync Active: All projects and estimates are synced securely to your Supabase PostgreSQL database.'
+                : 'Local Workspace Active: All project takeoffs, 3D models, and cost estimates are saved directly to your browser storage.'}
+            </span>
           </div>
 
           <div className="pt-2 flex items-center justify-between">
@@ -109,17 +125,37 @@ export function AuthModal() {
         <div className="flex justify-center pb-1">
           <BrandLogo size="md" theme="light" />
         </div>
+
         {!isConfigured && (
-          <div className="rounded-xl border border-amber-200/90 bg-amber-50/70 p-3 text-xs text-amber-900 flex items-start gap-2">
-            <ShieldAlert className="h-4 w-4 text-amber-600 shrink-0 mt-0.5" />
-            <div>
-              <span className="font-bold">Backend Setup Notice: </span>
+          <div className="rounded-xl border border-emerald-200/90 bg-emerald-50/70 p-3 text-xs text-emerald-950 flex items-start gap-2.5">
+            <Sparkles className="h-4 w-4 text-emerald-600 shrink-0 mt-0.5" />
+            <div className="flex-1">
+              <span className="font-bold">Instant Local Workspace: </span>
               <span>
-                To enable live cloud authentication, add your <code>VITE_SUPABASE_URL</code> and <code>VITE_SUPABASE_ANON_KEY</code> to your environment variables. Guest mode is currently active with local storage.
+                Enter your email or use 1-Click Guest to access all estimation features immediately. All project data is saved locally in your browser.
               </span>
             </div>
           </div>
         )}
+
+        {/* 1-Click Guest Sign-In Shortcut */}
+        <button
+          type="button"
+          onClick={handleGuestSignIn}
+          disabled={loading}
+          className="w-full flex items-center justify-center gap-2 rounded-xl border border-zinc-200 bg-stone-50 hover:bg-zinc-100/80 px-4 py-2.5 text-xs font-semibold text-zinc-800 transition-all cursor-pointer shadow-2xs group"
+        >
+          <User className="h-4 w-4 text-brand-500 transition-transform group-hover:scale-110" />
+          <span>Quick 1-Click Guest Access (No Password Needed)</span>
+        </button>
+
+        <div className="relative flex items-center justify-center my-0.5">
+          <div className="border-t border-zinc-200 w-full" />
+          <span className="bg-white px-3 text-[11px] font-medium text-zinc-400 shrink-0">
+            or continue with email
+          </span>
+          <div className="border-t border-zinc-200 w-full" />
+        </div>
 
         {/* Tab switch */}
         <div className="flex rounded-lg border border-zinc-200 bg-zinc-100/70 p-1 text-xs">
@@ -153,6 +189,7 @@ export function AuthModal() {
           <Input
             label="Email Address"
             type="email"
+            autoComplete="email"
             placeholder="estimator@construction.com"
             value={email}
             onChange={(e) => setEmail(e.target.value)}
@@ -163,6 +200,7 @@ export function AuthModal() {
           <Input
             label="Password"
             type="password"
+            autoComplete={mode === 'signin' ? 'current-password' : 'new-password'}
             placeholder="••••••••"
             value={password}
             onChange={(e) => setPassword(e.target.value)}
@@ -192,8 +230,10 @@ export function AuthModal() {
           </div>
         </form>
 
-        <p className="text-center text-[11px] text-zinc-400 pt-2">
-          Encrypted with Supabase PostgreSQL & Row Level Security.
+        <p className="text-center text-[11px] text-zinc-400 pt-1">
+          {isConfigured
+            ? 'Encrypted with Supabase PostgreSQL & Row Level Security.'
+            : 'Private & Secure Local Storage Workspace.'}
         </p>
       </div>
     </Modal>

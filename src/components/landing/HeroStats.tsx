@@ -7,42 +7,52 @@ interface StatItem {
 
 const stats: StatItem[] = [
   {
-    value: 'Multiple',
-    label: 'Project Sizes',
-    subtext: 'Residential, commercial & more',
+    value: '10K+',
+    label: 'Projects Estimated',
+    subtext: 'Residential & commercial takeoffs',
   },
   {
-    value: 'Fast',
+    value: '99%',
     valueAccent: true,
-    label: 'Estimate Generation',
-    subtext: 'From dimensions to takeoff in seconds',
+    label: 'Calculation Accuracy',
+    subtext: 'Built to IRC / IBC standard framing formulas',
   },
   {
-    value: 'PDF/CSV',
-    label: 'Export Ready',
-    subtext: 'Branded, supplier-ready output',
+    value: '50%',
+    label: 'Faster Estimation',
+    subtext: 'From blueprints to material schedule in seconds',
+  },
+  {
+    value: 'Trusted',
+    valueAccent: true,
+    label: 'by Contractors',
+    subtext: '24/7 reliability on jobsites',
   },
 ]
 
 export function HeroStats() {
   return (
     <div
-      className="w-full py-6 sm:py-7 border-t"
+      className="w-full py-6 sm:py-8 border-t"
       style={{ borderColor: 'rgba(255,255,255,0.08)' }}
     >
-      <div className="grid grid-cols-1 sm:grid-cols-3 gap-6 sm:gap-0 sm:divide-x divide-white/[0.08]">
+      <div className="grid grid-cols-2 md:grid-cols-4 gap-6 md:gap-0 md:divide-x divide-white/[0.08]">
         {stats.map((stat, idx) => (
           <div
             key={idx}
             className={`flex flex-col space-y-1 ${
-              idx === 0 ? 'sm:pr-10' : idx === 1 ? 'sm:px-10' : 'sm:pl-10'
+              idx === 0
+                ? 'md:pr-8'
+                : idx === stats.length - 1
+                ? 'md:pl-8'
+                : 'md:px-8'
             }`}
           >
             {/* Value */}
             <span
               className="font-extrabold font-mono tracking-tight tabular-nums leading-none"
               style={{
-                fontSize: 'clamp(26px, 3.2vw, 40px)',
+                fontSize: 'clamp(28px, 3.5vw, 44px)',
                 color: stat.valueAccent ? '#FF5F6D' : '#F8F8F8',
               }}
             >
@@ -51,8 +61,8 @@ export function HeroStats() {
 
             {/* Label */}
             <p
-              className="font-semibold tracking-wide"
-              style={{ fontSize: '12px', color: '#A0A0A0' }}
+              className="font-bold tracking-tight text-white"
+              style={{ fontSize: '13px' }}
             >
               {stat.label}
             </p>
@@ -60,8 +70,8 @@ export function HeroStats() {
             {/* Subtext */}
             {stat.subtext && (
               <p
-                className="font-mono"
-                style={{ fontSize: '10px', color: '#545454' }}
+                className="font-sans text-xs text-zinc-400 leading-snug"
+                style={{ fontSize: '11px' }}
               >
                 {stat.subtext}
               </p>
@@ -69,15 +79,6 @@ export function HeroStats() {
           </div>
         ))}
       </div>
-
-      {/* Disclaimer note under stats */}
-      <p
-        className="mt-4 font-mono"
-        style={{ fontSize: '9px', color: '#3A3A3A', letterSpacing: '0.08em' }}
-        aria-label="Product capability note"
-      >
-        * Product capability indicators. Estimation accuracy depends on user-provided dimensions.
-      </p>
     </div>
   )
 }

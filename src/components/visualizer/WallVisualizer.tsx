@@ -2,7 +2,8 @@ import { useState, useRef, useCallback } from 'react'
 import type { Opening, Wall } from '../../types/project'
 import { lengthToInches, smallLengthToInches } from '../../utils/units'
 import type { MeasurementSystem } from '../../types/project'
-import { ZoomIn, ZoomOut, RotateCcw, Layers } from 'lucide-react'
+import { ZoomIn, ZoomOut, RotateCcw, Layers, Box, Compass } from 'lucide-react'
+import { Framing3DViewer, type FramingElementInfo } from './Framing3DViewer'
 
 interface WallVisualizerProps {
   wall: Wall | null
@@ -10,6 +11,8 @@ interface WallVisualizerProps {
   studSpacingIn: number
   measurementSystem: MeasurementSystem
   topPlate?: 'single' | 'double'
+  propertyType?: string
+  propertyConfig?: any
 }
 
 // Professional architectural drafting palette for framing members
@@ -30,7 +33,11 @@ export function WallVisualizer({
   studSpacingIn,
   measurementSystem,
   topPlate = 'double',
+  propertyType,
+  propertyConfig,
 }: WallVisualizerProps) {
+  const [viewMode, setViewMode] = useState<'3d' | '2d'>('3d')
+  const [selectedElement, setSelectedElement] = useState<FramingElementInfo | null>(null)
   const [zoom, setZoom] = useState(1)
   const [blueprintMode, setBlueprintMode] = useState(false)
   const svgContainerRef = useRef<HTMLDivElement>(null)
@@ -151,7 +158,35 @@ export function WallVisualizer({
     <div className={`overflow-hidden rounded-2xl border border-zinc-200 shadow-xs ${bgStyle} transition-colors`}>
       {/* Top Toolbar */}
       <div className="flex flex-wrap items-center justify-between gap-2 border-b border-zinc-100/80 bg-zinc-50/90 px-4 py-2.5">
-        <div className="flex items-center gap-2 text-xs">
+        <div className="flex flex-wrap items-center gap-2 text-xs">
+          {/* Mode Switcher */}
+          <div className="flex items-center rounded-lg bg-zinc-200/80 p-0.5 mr-1">
+            <button
+              type="button"
+              onClick={() => setViewMode('3d')}
+              className={`flex items-center gap-1.5 px-2.5 py-1 rounded-md text-xs font-bold transition-all cursor-pointer ${
+                viewMode === '3d'
+                  ? 'bg-brand-500 text-white shadow-xs'
+                  : 'text-zinc-700 hover:text-zinc-950'
+              }`}
+            >
+              <Box className="h-3.5 w-3.5" />
+              <span>3D Framing</span>
+            </button>
+            <button
+              type="button"
+              onClick={() => setViewMode('2d')}
+              className={`flex items-center gap-1.5 px-2.5 py-1 rounded-md text-xs font-bold transition-all cursor-pointer ${
+                viewMode === '2d'
+                  ? 'bg-brand-500 text-white shadow-xs'
+                  : 'text-zinc-700 hover:text-zinc-950'
+              }`}
+            >
+              <Compass className="h-3.5 w-3.5" />
+              <span>2D Elevation</span>
+            </button>
+          </div>
+
           <span className="font-bold text-zinc-900">{wall.name}</span>
           <span className="text-zinc-400">|</span>
           <span className="font-mono text-zinc-600">
@@ -165,51 +200,103 @@ export function WallVisualizer({
           </span>
         </div>
 
-        <div className="flex items-center gap-1.5">
-          <button
-            onClick={() => setBlueprintMode((b) => !b)}
-            className={`flex h-7 items-center gap-1 rounded-md px-2 text-xs font-medium border transition-colors cursor-pointer ${
-              blueprintMode
-                ? 'bg-sky-950 text-sky-200 border-sky-800'
-                : 'bg-white text-zinc-600 border-zinc-200 hover:bg-zinc-50'
-            }`}
-            title="Toggle Blueprint aesthetic"
-          >
-            <Layers className="h-3.5 w-3.5" />
-            <span>{blueprintMode ? 'Drafting Mode' : 'Blueprint Mode'}</span>
-          </button>
+        {viewMode === '2d' && (
+          <div className="flex items-center gap-1.5">
+            <button
+              onClick={() => setBlueprintMode((b) => !b)}
+              className={`flex h-7 items-center gap-1 rounded-md px-2 text-xs font-medium border transition-colors cursor-pointer ${
+                blueprintMode
+                  ? 'bg-sky-950 text-sky-200 border-sky-800'
+                  : 'bg-white text-zinc-600 border-zinc-200 hover:bg-zinc-50'
+              }`}
+              title="Toggle Blueprint aesthetic"
+            >
+              <Layers className="h-3.5 w-3.5" />
+              <span>{blueprintMode ? 'Drafting Mode' : 'Blueprint Mode'}</span>
+            </button>
 
-          <div className="h-4 w-px bg-zinc-200" />
+            <div className="h-4 w-px bg-zinc-200" />
 
-          <button
-            onClick={handleZoomOut}
-            disabled={zoom <= 0.4}
-            className="flex h-7 w-7 items-center justify-center rounded-md border border-zinc-200 bg-white text-zinc-600 hover:bg-zinc-50 disabled:opacity-40 transition-colors cursor-pointer"
-            aria-label="Zoom out"
-          >
-            <ZoomOut className="h-3.5 w-3.5" />
-          </button>
-          <span className="min-w-[2.75rem] text-center font-mono text-xs font-semibold text-zinc-600">
-            {Math.round(zoom * 100)}%
-          </span>
-          <button
-            onClick={handleZoomIn}
-            disabled={zoom >= 3}
-            className="flex h-7 w-7 items-center justify-center rounded-md border border-zinc-200 bg-white text-zinc-600 hover:bg-zinc-50 disabled:opacity-40 transition-colors cursor-pointer"
-            aria-label="Zoom in"
-          >
-            <ZoomIn className="h-3.5 w-3.5" />
-          </button>
-          <button
-            onClick={handleReset}
-            className="flex h-7 w-7 items-center justify-center rounded-md border border-zinc-200 bg-white text-zinc-600 hover:bg-zinc-50 transition-colors cursor-pointer"
-            aria-label="Reset zoom"
-            title="Reset zoom to 100%"
-          >
-            <RotateCcw className="h-3.5 w-3.5" />
-          </button>
-        </div>
+            <button
+              onClick={handleZoomOut}
+              disabled={zoom <= 0.4}
+              className="flex h-7 w-7 items-center justify-center rounded-md border border-zinc-200 bg-white text-zinc-600 hover:bg-zinc-50 disabled:opacity-40 transition-colors cursor-pointer"
+              aria-label="Zoom out"
+            >
+              <ZoomOut className="h-3.5 w-3.5" />
+            </button>
+            <span className="min-w-[2.75rem] text-center font-mono text-xs font-semibold text-zinc-600">
+              {Math.round(zoom * 100)}%
+            </span>
+            <button
+              onClick={handleZoomIn}
+              disabled={zoom >= 3}
+              className="flex h-7 w-7 items-center justify-center rounded-md border border-zinc-200 bg-white text-zinc-600 hover:bg-zinc-50 disabled:opacity-40 transition-colors cursor-pointer"
+              aria-label="Zoom in"
+            >
+              <ZoomIn className="h-3.5 w-3.5" />
+            </button>
+            <button
+              onClick={handleReset}
+              className="flex h-7 w-7 items-center justify-center rounded-md border border-zinc-200 bg-white text-zinc-600 hover:bg-zinc-50 transition-colors cursor-pointer"
+              aria-label="Reset zoom"
+              title="Reset zoom to 100%"
+            >
+              <RotateCcw className="h-3.5 w-3.5" />
+            </button>
+          </div>
+        )}
       </div>
+
+      {/* 3D Framing View */}
+      {viewMode === '3d' && (
+        <div className="relative w-full h-[480px] bg-[#090E17]">
+          <Framing3DViewer
+            wall={wall}
+            openings={wallOpenings}
+            studSpacingIn={studSpacingIn}
+            measurementSystem={measurementSystem}
+            topPlate={topPlate}
+            propertyType={propertyType}
+            propertyConfig={propertyConfig}
+            isFullStructure={false}
+            selectedElementId={selectedElement?.id}
+            onSelectElement={(info) => setSelectedElement(info)}
+            className="h-full w-full rounded-none border-none"
+            showToolbar={true}
+            showSidePanels={false}
+          />
+          {selectedElement && (
+            <div className="absolute bottom-16 right-4 z-20 max-w-xs p-3.5 rounded-xl bg-zinc-950/95 border border-zinc-800 text-white shadow-2xl backdrop-blur-md space-y-1.5 animate-fade-in">
+              <div className="flex items-center justify-between">
+                <span className="font-bold text-xs text-brand-400">{selectedElement.name}</span>
+                <button
+                  type="button"
+                  onClick={() => setSelectedElement(null)}
+                  className="text-zinc-500 hover:text-zinc-300 text-xs cursor-pointer px-1"
+                >
+                  ✕
+                </button>
+              </div>
+              <div className="grid grid-cols-2 gap-x-2 gap-y-1 text-[11px] font-mono text-zinc-300">
+                <div>Length: <span className="text-white font-bold">{selectedElement.length}</span></div>
+                <div>Qty: <span className="text-brand-400 font-bold">{selectedElement.quantity}</span></div>
+                <div>Spacing: <span className="text-white">{selectedElement.spacing}</span></div>
+                <div>Material: <span className="text-marigold-400">{selectedElement.material}</span></div>
+              </div>
+              {selectedElement.notes && (
+                <p className="text-[10px] text-zinc-400 border-t border-zinc-800 pt-1">
+                  {selectedElement.notes}
+                </p>
+              )}
+            </div>
+          )}
+        </div>
+      )}
+
+      {/* 2D Elevation View */}
+      {viewMode === '2d' && (
+        <>
 
       {/* SVG Canvas */}
       <div ref={svgContainerRef} className="overflow-auto p-2 scrollbar-thin">
@@ -615,6 +702,8 @@ export function WallVisualizer({
           </span>
         ))}
       </div>
+      </>
+      )}
     </div>
   )
 }

@@ -25,6 +25,7 @@ import { Dropdown } from '../components/ui/Dropdown'
 import { formatCurrency } from '../utils/calculations'
 import { calculateFramingEstimate } from '../services/framingCalculator'
 import { PROJECT_TYPES } from '../data/constants'
+import { PROPERTY_TYPES } from '../data/propertyTypes'
 
 export function ProjectsPage() {
   const { projects, removeProject, copyProject } = useProjectContext()
@@ -209,8 +210,8 @@ export function ProjectsPage() {
               >
                 <div className="space-y-3">
                   <div className="flex items-start justify-between gap-2">
-                    <Badge variant="brand" className="capitalize">
-                      {project.projectType}
+                    <Badge variant="brand" className="font-semibold">
+                      {PROPERTY_TYPES.find((p) => p.id === project.projectType)?.title || project.projectType}
                     </Badge>
                     <Dropdown
                       trigger={
@@ -342,8 +343,10 @@ export function ProjectsPage() {
                         <p className="text-[11px] text-zinc-400 truncate max-w-xs">{project.notes}</p>
                       )}
                     </td>
-                    <td className="px-4 py-3 capitalize">
-                      <Badge variant="brand">{project.projectType}</Badge>
+                    <td className="px-4 py-3">
+                      <Badge variant="brand" className="font-semibold">
+                        {PROPERTY_TYPES.find((p) => p.id === project.projectType)?.title || project.projectType}
+                      </Badge>
                     </td>
                     <td className="px-4 py-3 text-zinc-500">
                       {new Date(project.updatedAt).toLocaleDateString()}

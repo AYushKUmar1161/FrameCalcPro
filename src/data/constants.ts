@@ -29,6 +29,11 @@ export const DEFAULT_BOARD_LENGTH_FT = 10
 export const DEFAULT_STUD_LENGTH_FT = 8
 
 export const PROJECT_TYPES = [
+  { value: 'residential', label: 'Residential' },
+  { value: 'multi-family', label: 'Multi-Family' },
+  { value: 'commercial', label: 'Commercial' },
+  { value: 'garage-adu', label: 'Garage / ADU' },
+  { value: 'addition-remodel', label: 'Addition / Remodel' },
   { value: 'exterior', label: 'Exterior' },
   { value: 'interior', label: 'Interior' },
   { value: 'garage', label: 'Garage' },
@@ -95,21 +100,21 @@ export const DEFAULT_FRAMING_SETTINGS: FramingSettings = {
 }
 
 export const DEFAULT_MATERIAL_PRICES: MaterialPrices = {
-  stud2x4: 4.25,
-  stud2x6: 6.5,
-  plate2x4: 4.0,
-  plate2x6: 6.25,
-  header2x4: 4.25,
-  header2x6: 6.5,
-  header2x8: 8.75,
-  header2x10: 12.5,
-  header2x12: 16.0,
-  headerLvl: 22.0,
-  osb4x8: 18.5,
-  plywood4x8: 32.0,
-  blocking: 4.25,
-  fasteners: 3.5,
-  miscHardware: 45.0,
+  stud2x4: 350.0,
+  stud2x6: 520.0,
+  plate2x4: 340.0,
+  plate2x6: 500.0,
+  header2x4: 360.0,
+  header2x6: 540.0,
+  header2x8: 720.0,
+  header2x10: 980.0,
+  header2x12: 1250.0,
+  headerLvl: 1800.0,
+  osb4x8: 1450.0,
+  plywood4x8: 2400.0,
+  blocking: 320.0,
+  fasteners: 280.0,
+  miscHardware: 3500.0,
 }
 
 export const DISCLAIMER =

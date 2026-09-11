@@ -6,7 +6,7 @@ import {
   Calendar,
   ChevronRight,
   Copy,
-  DollarSign,
+  IndianRupee,
   FolderKanban,
   FolderOpen,
   MoreVertical,
@@ -121,7 +121,7 @@ export function DashboardPage() {
               Estimated Material Cost
             </span>
             <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-black/20 text-white backdrop-blur-xs">
-              <DollarSign className="h-4 w-4" />
+              <IndianRupee className="h-4 w-4" />
             </div>
           </div>
           <div className="mt-4 space-y-1">

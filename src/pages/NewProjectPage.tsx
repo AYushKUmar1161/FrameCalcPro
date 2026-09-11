@@ -14,6 +14,9 @@ import {
   WASTE_OPTIONS,
 } from '../data/constants'
 import type { CreateProjectInput, FramingSettings } from '../types/project'
+import type { PropertyConfig, PropertyTypeId } from '../types/propertyType'
+import { PropertyTypeSelector } from '../components/property/PropertyTypeSelector'
+import { getPropertyTypeConfig } from '../data/propertyTypes'
 
 export function NewProjectPage() {
   const { addProject } = useProjectContext()
@@ -21,11 +24,30 @@ export function NewProjectPage() {
   const navigate = useNavigate()
 
   const [name, setName] = useState('')
-  const [projectType, setProjectType] = useState<CreateProjectInput['projectType']>('exterior')
+  const [projectType, setProjectType] = useState<CreateProjectInput['projectType']>('residential')
+  const [propertyConfig, setPropertyConfig] = useState<PropertyConfig | undefined>()
   const [measurementSystem, setMeasurementSystem] = useState<CreateProjectInput['measurementSystem']>('imperial')
   const [notes, setNotes] = useState('')
   const [settings, setSettings] = useState<FramingSettings>({ ...DEFAULT_FRAMING_SETTINGS })
   const [errors, setErrors] = useState<Record<string, string>>({})
+
+  const handleSelectPropertyType = (typeId: PropertyTypeId) => {
+    setProjectType(typeId)
+    const config = getPropertyTypeConfig(typeId)
+
+    // Apply smart framing defaults
+    setSettings((prev) => ({
+      ...prev,
+      wallThickness: config.defaultWallThickness,
+      studSpacing: config.defaultStudSpacing,
+      topPlate: config.defaultTopPlate,
+    }))
+
+    // Suggest friendly default name if empty or generic
+    if (!name || name === 'New Framing Project' || name.endsWith('Framing Project')) {
+      setName(`${config.name} Framing Project`)
+    }
+  }
 
   const validate = () => {
     const errs: Record<string, string> = {}
@@ -40,6 +62,7 @@ export function NewProjectPage() {
     const project = addProject({
       name: name.trim(),
       projectType,
+      propertyConfig,
       measurementSystem,
       settings,
       notes,
@@ -49,7 +72,7 @@ export function NewProjectPage() {
   }
 
   return (
-    <div className="mx-auto max-w-2xl px-4 py-8 sm:px-6">
+    <div className="mx-auto max-w-4xl px-4 py-8 sm:px-6">
       <div className="mb-6">
         <div className="flex items-center gap-3 mb-2">
           <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-brand-100">
@@ -57,7 +80,7 @@ export function NewProjectPage() {
           </div>
           <h1 className="text-2xl font-bold text-zinc-900">New Project</h1>
         </div>
-        <p className="text-zinc-500">Set up your framing project and we'll calculate all materials for you.</p>
+        <p className="text-zinc-500">Configure your property type and framing parameters for precise material takeoffs.</p>
       </div>
 
       {/* Guided Wizard Callout */}
@@ -78,9 +101,19 @@ export function NewProjectPage() {
         </Link>
       </div>
 
+      {/* STEP 1: PROPERTY TYPE SELECTION */}
+      <div className="mb-8">
+        <PropertyTypeSelector
+          selectedType={(projectType as PropertyTypeId) || 'residential'}
+          onSelectType={handleSelectPropertyType}
+          propertyConfig={propertyConfig}
+          onChangeConfig={setPropertyConfig}
+        />
+      </div>
+
       <form onSubmit={handleSubmit} className="space-y-6">
         {/* Basic Info */}
-        <div className="rounded-lg border border-zinc-200 bg-white p-6 space-y-4">
+        <div className="rounded-xl border border-zinc-200 bg-white p-6 space-y-4 shadow-sm">
           <h2 className="text-base font-semibold text-zinc-900">Project Details</h2>
           <Input
             id="project-name"
@@ -88,15 +121,21 @@ export function NewProjectPage() {
             value={name}
             onChange={(e) => setName(e.target.value)}
             error={errors.name}
-            placeholder="e.g. Smith Residence – Exterior Walls"
+            placeholder="e.g. Smith Residence – Framing Takeoff"
             required
           />
           <div className="grid gap-4 sm:grid-cols-2">
             <Select
               id="project-type"
-              label="Project Type"
+              label="Property Classification"
               value={projectType}
-              onChange={(e) => setProjectType(e.target.value as CreateProjectInput['projectType'])}
+              onChange={(e) => {
+                const val = e.target.value as CreateProjectInput['projectType']
+                setProjectType(val)
+                if (['residential', 'multi-family', 'commercial', 'garage-adu', 'addition-remodel'].includes(val)) {
+                  handleSelectPropertyType(val as PropertyTypeId)
+                }
+              }}
               options={PROJECT_TYPES.map((t) => ({ value: t.value, label: t.label }))}
             />
             <Select

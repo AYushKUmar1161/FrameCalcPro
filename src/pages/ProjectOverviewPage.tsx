@@ -3,7 +3,7 @@ import { Link, useParams } from 'react-router-dom'
 import {
   Calculator,
   ClipboardList,
-  DollarSign,
+  IndianRupee,
   Package,
   Ruler,
   Settings,
@@ -14,6 +14,7 @@ import { formatCurrency } from '../utils/calculations'
 import { WallVisualizer } from '../components/visualizer/WallVisualizer'
 import { ResultsDashboard } from '../components/dashboard/ResultsDashboard'
 import { Button } from '../components/ui/Button'
+import { PROPERTY_TYPES } from '../data/propertyTypes'
 
 export function ProjectOverviewPage() {
   const { id } = useParams<{ id: string }>()
@@ -51,9 +52,29 @@ export function ProjectOverviewPage() {
       {/* Header */}
       <div className="flex items-start justify-between">
         <div>
-          <h1 className="text-2xl font-bold text-zinc-900">{activeProject.name}</h1>
+          <div className="flex items-center gap-2.5 flex-wrap">
+            <h1 className="text-2xl font-bold text-zinc-900">{activeProject.name}</h1>
+            <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-bold bg-coral-500/10 text-coral-600 border border-coral-500/20">
+              {PROPERTY_TYPES.find((p) => p.id === activeProject.projectType)?.title || activeProject.projectType}
+            </span>
+            {activeProject.propertyConfig?.multiFamilyUnits && (
+              <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-semibold bg-zinc-100 text-zinc-700 border border-zinc-200">
+                {activeProject.propertyConfig.multiFamilyUnits} Units
+              </span>
+            )}
+            {activeProject.propertyConfig?.remodelScope && (
+              <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-semibold bg-zinc-100 text-zinc-700 border border-zinc-200 capitalize">
+                {activeProject.propertyConfig.remodelScope} Scope
+              </span>
+            )}
+            {activeProject.propertyConfig?.garageDoorOpening && (
+              <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-semibold bg-zinc-100 text-zinc-700 border border-zinc-200">
+                Garage Door: {activeProject.propertyConfig.garageDoorOpening}
+              </span>
+            )}
+          </div>
           <p className="mt-1 text-sm text-zinc-500 capitalize">
-            {activeProject.projectType} · {activeProject.measurementSystem} · Updated {new Date(activeProject.updatedAt).toLocaleDateString()}
+            {activeProject.measurementSystem} · Updated {new Date(activeProject.updatedAt).toLocaleDateString()}
           </p>
           {activeProject.notes && (
             <p className="mt-1 text-sm text-zinc-600 italic">{activeProject.notes}</p>
@@ -61,7 +82,7 @@ export function ProjectOverviewPage() {
         </div>
         <Link to="estimate">
           <Button>
-            <DollarSign className="h-4 w-4" /> View Estimate
+            <IndianRupee className="h-4 w-4" /> View Estimate
           </Button>
         </Link>
       </div>
@@ -98,6 +119,8 @@ export function ProjectOverviewPage() {
             studSpacingIn={studSpacingIn}
             measurementSystem={activeProject.measurementSystem}
             topPlate={activeProject.settings.topPlate}
+            propertyType={activeProject.projectType}
+            propertyConfig={activeProject.propertyConfig}
           />
           {activeProject.walls.length > 1 && (
             <p className="mt-2 text-xs text-zinc-400 text-center">

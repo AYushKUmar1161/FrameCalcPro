@@ -5,10 +5,11 @@ import {
   ArrowRight,
   Calculator,
   CheckCircle2,
-  DollarSign,
+  IndianRupee,
   Download,
   Eye,
   FileText,
+  Home,
   Package,
   Pencil,
   Plus,
@@ -30,6 +31,9 @@ import type {
   Wall,
   Window,
 } from '../../types/project'
+import type { PropertyConfig, PropertyTypeId } from '../../types/propertyType'
+import { PropertyTypeSelector } from '../property/PropertyTypeSelector'
+import { getPropertyTypeConfig, PROPERTY_TYPES } from '../../data/propertyTypes'
 import {
   BLOCKING_TYPE_OPTIONS,
   CORNER_TYPE_OPTIONS,
@@ -37,7 +41,6 @@ import {
   DEFAULT_MATERIAL_PRICES,
   HEADER_ROUGH_OPENING_ALLOWANCE_IN,
   HEADER_SIZE_OPTIONS,
-  PROJECT_TYPES,
   STUD_SPACING_OPTIONS,
   WALL_THICKNESS_OPTIONS,
   WASTE_OPTIONS,
@@ -74,11 +77,11 @@ interface StepByStepCalculatorProps {
 }
 
 const STEPS = [
-  { step: 1, title: 'Project Info', desc: 'Name, type & system', icon: Calculator },
+  { step: 1, title: 'Property Type', desc: 'What are you building?', icon: Home },
   { step: 2, title: 'Walls', desc: 'Dimensions & areas', icon: Ruler },
   { step: 3, title: 'Openings', desc: 'Doors & windows', icon: Package },
   { step: 4, title: 'Framing Settings', desc: 'Spacing, plates & extras', icon: Settings },
-  { step: 5, title: 'Materials & Prices', desc: 'Local lumber rates', icon: DollarSign },
+  { step: 5, title: 'Materials & Prices', desc: 'Local lumber rates', icon: IndianRupee },
   { step: 6, title: 'Review', desc: 'Confirm specifications', icon: Eye },
   { step: 7, title: 'Final Estimate', desc: 'Takeoff & results', icon: CheckCircle2 },
 ]
@@ -92,21 +95,39 @@ export function StepByStepCalculator({ initialProject, onComplete }: StepByStepC
 
   // Project state
   const [projectId] = useState(initialProject?.id ?? generateId())
-  const [name, setName] = useState(initialProject?.name ?? 'New Framing Project')
-  const [projectType, setProjectType] = useState<Project['projectType']>(initialProject?.projectType ?? 'exterior')
+  const [name, setName] = useState(initialProject?.name ?? 'Residential Framing Project')
+  const [projectType, setProjectType] = useState<Project['projectType']>(
+    initialProject?.projectType ?? 'residential',
+  )
+  const [propertyConfig, setPropertyConfig] = useState<PropertyConfig>(
+    initialProject?.propertyConfig ?? {
+      numUnits: 2,
+      remodelScope: 'both',
+      garageDoorSize: '16x7',
+      garageDoorWidth: 192,
+      garageDoorHeight: 84,
+    },
+  )
   const [measurementSystem, setMeasurementSystem] = useState<Project['measurementSystem']>(
     initialProject?.measurementSystem ?? 'imperial',
   )
   const [notes, setNotes] = useState(initialProject?.notes ?? '')
 
-  // Walls & Openings
+  // Walls & Openings (defaults to 40' x 28' residential envelope or initial project)
   const [walls, setWalls] = useState<Wall[]>(
     initialProject?.walls ?? [
-      { id: generateId(), name: 'North Wall', length: 24, height: 8 },
-      { id: generateId(), name: 'South Wall', length: 24, height: 8 },
+      { id: generateId(), name: 'Front Wall', length: 40, height: 8 },
+      { id: generateId(), name: 'Back Wall', length: 40, height: 8 },
+      { id: generateId(), name: 'Left Wall', length: 28, height: 8 },
+      { id: generateId(), name: 'Right Wall', length: 28, height: 8 },
     ],
   )
-  const [openings, setOpenings] = useState<Opening[]>(initialProject?.openings ?? [])
+  const [openings, setOpenings] = useState<Opening[]>(
+    initialProject?.openings ?? [
+      { id: generateId(), type: 'door', name: 'Main Entry Door', wallId: '', width: 36, height: 80, quantity: 1, headerSize: '2x8' },
+      { id: generateId(), type: 'window', name: 'Living Room Window', wallId: '', width: 48, height: 48, quantity: 2, headerSize: '2x6' },
+    ],
+  )
 
   // Settings & Prices
   const [settings, setSettings] = useState<FramingSettings>(
@@ -118,6 +139,54 @@ export function StepByStepCalculator({ initialProject, onComplete }: StepByStepC
   const [lineOverrides, setLineOverrides] = useState<Record<string, { quantity?: number; unitCost?: number }>>(
     initialProject?.lineOverrides ?? {},
   )
+
+  // Handler for Property Type selection with smart defaults
+  const handleSelectPropertyType = (typeId: PropertyTypeId) => {
+    setProjectType(typeId)
+    const config = getPropertyTypeConfig(typeId)
+
+    // Apply smart framing defaults
+    setSettings((prev) => ({
+      ...prev,
+      wallThickness: config.defaultWallThickness,
+      studSpacing: config.defaultStudSpacing,
+      topPlate: config.defaultTopPlate,
+    }))
+
+    // Apply smart geometry defaults
+    const wallHeight = config.defaultWallHeight
+    const len = config.defaultDimensions.length
+    const wid = config.defaultDimensions.width
+
+    const frontId = generateId()
+    const newWalls: Wall[] = [
+      { id: frontId, name: 'Front Wall', length: len, height: wallHeight },
+      { id: generateId(), name: 'Back Wall', length: len, height: wallHeight },
+      { id: generateId(), name: 'Left Wall', length: wid, height: wallHeight },
+      { id: generateId(), name: 'Right Wall', length: wid, height: wallHeight },
+    ]
+    setWalls(newWalls)
+
+    // Apply smart opening templates suited to property type
+    const newOpenings: Opening[] = config.defaultOpenings.map((op) => ({
+      id: generateId(),
+      type: op.type,
+      name: op.name,
+      wallId: frontId,
+      width: op.width,
+      height: op.height,
+      quantity: op.quantity,
+      headerSize: op.headerSize,
+    }))
+    setOpenings(newOpenings)
+
+    // Update project name if generic
+    if (!name || name === 'New Framing Project' || name.endsWith('Framing Project')) {
+      setName(`${config.name} Framing Project`)
+    }
+
+    showToast(`Configured defaults for ${config.name}!`, 'info')
+  }
 
   // Modals for adding wall & opening
   const [wallModalOpen, setWallModalOpen] = useState(false)
@@ -150,6 +219,7 @@ export function StepByStepCalculator({ initialProject, onComplete }: StepByStepC
       id: projectId,
       name: name.trim() || 'Framing Project',
       projectType,
+      propertyConfig,
       measurementSystem,
       walls,
       openings,
@@ -165,6 +235,7 @@ export function StepByStepCalculator({ initialProject, onComplete }: StepByStepC
     projectId,
     name,
     projectType,
+    propertyConfig,
     measurementSystem,
     walls,
     openings,
@@ -450,51 +521,65 @@ export function StepByStepCalculator({ initialProject, onComplete }: StepByStepC
         </div>
       </div>
 
-      {/* STEP 1: PROJECT INFORMATION */}
+      {/* STEP 1: PROPERTY TYPE & PROJECT INFORMATION */}
       {currentStep === 1 && (
-        <Card
-          title="Step 1: Project Information"
-          description="Enter your project details, type of build, and measurement units."
-        >
-          <div className="max-w-2xl space-y-4">
-            <Input
-              label="Project Name"
-              value={name}
-              onChange={(e) => setName(e.target.value)}
-              placeholder="e.g. Master Bedroom Addition or Detached Garage"
-              required
+        <div className="space-y-6">
+          <div className="rounded-3xl border border-zinc-800 bg-[#0B0F17] p-6 sm:p-8 shadow-2xl text-white">
+            <PropertyTypeSelector
+              selectedType={(projectType as PropertyTypeId) || 'residential'}
+              onSelectType={handleSelectPropertyType}
+              config={propertyConfig}
+              onConfigChange={setPropertyConfig}
             />
-            <div className="grid gap-4 sm:grid-cols-2">
-              <Select
-                label="Project Type"
-                value={projectType}
-                onChange={(e) => setProjectType(e.target.value as Project['projectType'])}
-                options={PROJECT_TYPES.map((t) => ({ value: t.value, label: t.label }))}
-              />
-              <Select
-                label="Measurement System"
-                value={measurementSystem}
-                onChange={(e) => setMeasurementSystem(e.target.value as Project['measurementSystem'])}
-                options={[
-                  { value: 'imperial', label: 'Imperial (feet & inches)' },
-                  { value: 'metric', label: 'Metric (meters & mm)' },
-                ]}
-              />
-            </div>
-            <div>
-              <label className="block text-sm font-medium text-zinc-700 mb-1">
-                Project Notes & Site Instructions (Optional)
-              </label>
-              <textarea
-                rows={3}
-                value={notes}
-                onChange={(e) => setNotes(e.target.value)}
-                placeholder="Client address, engineer specifications, lumber yard notes..."
-                className="w-full rounded-lg border border-zinc-300 p-3 text-sm focus:border-brand-500 focus:ring-1 focus:ring-brand-500 focus:outline-none"
-              />
-            </div>
           </div>
-        </Card>
+
+          <Card
+            title="Project Details & Settings"
+            description="Fine-tune your project name, measurement units, and custom site notes."
+          >
+            <div className="max-w-2xl space-y-4">
+              <Input
+                label="Project Name"
+                value={name}
+                onChange={(e) => setName(e.target.value)}
+                placeholder="e.g. Master Bedroom Addition or Detached Garage"
+                required
+              />
+              <div className="grid gap-4 sm:grid-cols-2">
+                <div>
+                  <label className="block text-xs font-bold uppercase tracking-wider text-zinc-500 mb-1">
+                    Selected Property Type
+                  </label>
+                  <div className="flex items-center gap-2 p-2.5 rounded-lg border border-brand-200 bg-brand-50/50 text-brand-900 font-bold text-sm capitalize">
+                    <span>{getPropertyTypeConfig(projectType).name}</span>
+                    <span className="text-xs font-normal text-brand-700">({getPropertyTypeConfig(projectType).subtitle})</span>
+                  </div>
+                </div>
+                <Select
+                  label="Measurement System"
+                  value={measurementSystem}
+                  onChange={(e) => setMeasurementSystem(e.target.value as Project['measurementSystem'])}
+                  options={[
+                    { value: 'imperial', label: 'Imperial (feet & inches)' },
+                    { value: 'metric', label: 'Metric (meters & mm)' },
+                  ]}
+                />
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-zinc-700 mb-1">
+                  Project Notes & Site Instructions (Optional)
+                </label>
+                <textarea
+                  rows={3}
+                  value={notes}
+                  onChange={(e) => setNotes(e.target.value)}
+                  placeholder="Client address, engineer specifications, lumber yard notes..."
+                  className="w-full rounded-lg border border-zinc-300 p-3 text-sm focus:border-brand-500 focus:ring-1 focus:ring-brand-500 focus:outline-none"
+                />
+              </div>
+            </div>
+          </Card>
+        </div>
       )}
 
       {/* STEP 2: WALLS (PLAN / SKETCH INPUT) */}
@@ -810,7 +895,7 @@ export function StepByStepCalculator({ initialProject, onComplete }: StepByStepC
               </h3>
               <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
                 <div>
-                  <label className="block text-xs font-medium text-zinc-600 mb-1">2×4 Stud ($/board)</label>
+                  <label className="block text-xs font-medium text-zinc-600 mb-1">2×4 Stud (₹/board)</label>
                   <Input
                     type="number"
                     min="0"
@@ -820,7 +905,7 @@ export function StepByStepCalculator({ initialProject, onComplete }: StepByStepC
                   />
                 </div>
                 <div>
-                  <label className="block text-xs font-medium text-zinc-600 mb-1">2×6 Stud ($/board)</label>
+                  <label className="block text-xs font-medium text-zinc-600 mb-1">2×6 Stud (₹/board)</label>
                   <Input
                     type="number"
                     min="0"
@@ -830,7 +915,7 @@ export function StepByStepCalculator({ initialProject, onComplete }: StepByStepC
                   />
                 </div>
                 <div>
-                  <label className="block text-xs font-medium text-zinc-600 mb-1">2×4 Plate ($/board)</label>
+                  <label className="block text-xs font-medium text-zinc-600 mb-1">2×4 Plate (₹/board)</label>
                   <Input
                     type="number"
                     min="0"
@@ -840,7 +925,7 @@ export function StepByStepCalculator({ initialProject, onComplete }: StepByStepC
                   />
                 </div>
                 <div>
-                  <label className="block text-xs font-medium text-zinc-600 mb-1">2×6 Plate ($/board)</label>
+                  <label className="block text-xs font-medium text-zinc-600 mb-1">2×6 Plate (₹/board)</label>
                   <Input
                     type="number"
                     min="0"
@@ -855,7 +940,7 @@ export function StepByStepCalculator({ initialProject, onComplete }: StepByStepC
             {/* Header Lumber */}
             <div className="border-t border-zinc-100 pt-5">
               <h3 className="text-sm font-bold text-zinc-900 uppercase tracking-wider mb-3">
-                Header Lumber ($/linear foot)
+                Header Lumber (₹/linear foot)
               </h3>
               <div className="grid gap-3 sm:grid-cols-3 lg:grid-cols-6">
                 {[
@@ -889,7 +974,7 @@ export function StepByStepCalculator({ initialProject, onComplete }: StepByStepC
               </h3>
               <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-5">
                 <div>
-                  <label className="block text-xs font-medium text-zinc-600 mb-1">OSB 4×8 ($/sheet)</label>
+                  <label className="block text-xs font-medium text-zinc-600 mb-1">OSB 4×8 (₹/sheet)</label>
                   <Input
                     type="number"
                     min="0"
@@ -899,7 +984,7 @@ export function StepByStepCalculator({ initialProject, onComplete }: StepByStepC
                   />
                 </div>
                 <div>
-                  <label className="block text-xs font-medium text-zinc-600 mb-1">Plywood 4×8 ($/sheet)</label>
+                  <label className="block text-xs font-medium text-zinc-600 mb-1">Plywood 4×8 (₹/sheet)</label>
                   <Input
                     type="number"
                     min="0"
@@ -909,7 +994,7 @@ export function StepByStepCalculator({ initialProject, onComplete }: StepByStepC
                   />
                 </div>
                 <div>
-                  <label className="block text-xs font-medium text-zinc-600 mb-1">Blocking ($/board)</label>
+                  <label className="block text-xs font-medium text-zinc-600 mb-1">Blocking (₹/board)</label>
                   <Input
                     type="number"
                     min="0"
@@ -919,7 +1004,7 @@ export function StepByStepCalculator({ initialProject, onComplete }: StepByStepC
                   />
                 </div>
                 <div>
-                  <label className="block text-xs font-medium text-zinc-600 mb-1">Fasteners ($/lb)</label>
+                  <label className="block text-xs font-medium text-zinc-600 mb-1">Fasteners (₹/lb)</label>
                   <Input
                     type="number"
                     min="0"
@@ -929,7 +1014,7 @@ export function StepByStepCalculator({ initialProject, onComplete }: StepByStepC
                   />
                 </div>
                 <div>
-                  <label className="block text-xs font-medium text-zinc-600 mb-1">Misc Hardware ($ flat)</label>
+                  <label className="block text-xs font-medium text-zinc-600 mb-1">Misc Hardware (₹ flat)</label>
                   <Input
                     type="number"
                     min="0"
@@ -961,7 +1046,27 @@ export function StepByStepCalculator({ initialProject, onComplete }: StepByStepC
               <div className="rounded-xl border border-zinc-200 bg-zinc-50/60 p-4">
                 <span className="text-xs font-bold text-zinc-500 uppercase tracking-wide">Project Details</span>
                 <p className="mt-2 text-base font-bold text-zinc-900">{currentProject.name}</p>
-                <p className="text-xs text-zinc-500 capitalize">{currentProject.projectType} build · {currentProject.measurementSystem} units</p>
+                <div className="mt-1.5 flex flex-wrap items-center gap-1.5">
+                  <span className="inline-flex items-center px-2 py-0.5 rounded-full text-[11px] font-bold bg-coral-500/10 text-coral-600 border border-coral-500/20">
+                    {PROPERTY_TYPES.find((p) => p.id === currentProject.projectType)?.title || currentProject.projectType}
+                  </span>
+                  {propertyConfig?.multiFamilyUnits && (
+                    <span className="inline-flex items-center px-2 py-0.5 rounded-full text-[11px] font-semibold bg-zinc-100 text-zinc-700 border border-zinc-200">
+                      {propertyConfig.multiFamilyUnits} Units
+                    </span>
+                  )}
+                  {propertyConfig?.remodelScope && (
+                    <span className="inline-flex items-center px-2 py-0.5 rounded-full text-[11px] font-semibold bg-zinc-100 text-zinc-700 border border-zinc-200 capitalize">
+                      {propertyConfig.remodelScope} Scope
+                    </span>
+                  )}
+                  {propertyConfig?.garageDoorOpening && (
+                    <span className="inline-flex items-center px-2 py-0.5 rounded-full text-[11px] font-semibold bg-zinc-100 text-zinc-700 border border-zinc-200">
+                      Garage Door: {propertyConfig.garageDoorOpening}
+                    </span>
+                  )}
+                </div>
+                <p className="mt-1 text-xs text-zinc-500 capitalize">{currentProject.measurementSystem} units</p>
                 {notes && <p className="mt-2 text-xs italic text-zinc-600">{notes}</p>}
               </div>
 
@@ -1077,9 +1182,9 @@ export function StepByStepCalculator({ initialProject, onComplete }: StepByStepC
             <div className="rounded-xl border border-zinc-200 bg-white p-5 shadow-sm">
               <div className="mb-4 flex flex-wrap items-center justify-between gap-3">
                 <div>
-                  <h3 className="text-base font-bold text-zinc-900">2D Wall Framing Layout</h3>
+                  <h3 className="text-base font-bold text-zinc-900">Wall Framing Visualization</h3>
                   <p className="text-xs text-zinc-500">
-                    Real-time elevation rendering with studs on-center, plates, headers, and rough openings.
+                    Interactive 3D structural model and 2D architectural CAD elevation with studs on-center, plates, headers, and rough openings.
                   </p>
                 </div>
                 {walls.length > 1 && (
@@ -1108,6 +1213,8 @@ export function StepByStepCalculator({ initialProject, onComplete }: StepByStepC
                 }
                 measurementSystem={measurementSystem}
                 topPlate={settings.topPlate}
+                propertyType={currentProject.projectType}
+                propertyConfig={currentProject.propertyConfig}
               />
             </div>
           )}

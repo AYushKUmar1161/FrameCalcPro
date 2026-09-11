@@ -6,7 +6,41 @@ import { DISCLAIMER } from '../data/constants'
 import { formatCurrency, formatNumber } from '../utils/calculations'
 import { formatArea, formatLength, getAreaUnitLabel, getLengthUnitLabel } from '../utils/units'
 
-export function exportToCsv(project: Project, estimate: FramingEstimate): void {
+export function formatProjectTypeLabel(project: Project): string {
+  const map: Record<string, string> = {
+    residential: 'Residential',
+    'multi-family': 'Multi-Family',
+    commercial: 'Commercial',
+    'garage-adu': 'Garage / ADU',
+    'addition-remodel': 'Addition / Remodel',
+    exterior: 'Exterior Framing',
+    interior: 'Interior Framing',
+    shed: 'Shed / Outbuilding',
+    custom: 'Custom Framing',
+  }
+  const base = map[project.projectType] || project.projectType.toUpperCase()
+  if (project.propertyConfig?.multiFamilyUnits && project.projectType === 'multi-family') {
+    return `${base} (${project.propertyConfig.multiFamilyUnits} Units)`
+  }
+  if (project.propertyConfig?.remodelScope && project.projectType === 'addition-remodel') {
+    return `${base} (${project.propertyConfig.remodelScope} Scope)`
+  }
+  if (project.propertyConfig?.garageDoorOpening && project.projectType === 'garage-adu') {
+    return `${base} (Garage Door: ${project.propertyConfig.garageDoorOpening})`
+  }
+  return base
+}
+
+export function generateCsvContent(project: Project, estimate: FramingEstimate): string {
+  const meta = [
+    ['Project Name', project.name],
+    ['Property Type', formatProjectTypeLabel(project)],
+    ['Measurement System', project.measurementSystem],
+    ['Waste Allowance', `${project.settings.wastePercent}%`],
+    ['Generated On', new Date().toLocaleDateString()],
+    [''],
+  ]
+
   const headers = [
     'Category',
     'Material',
@@ -14,8 +48,8 @@ export function exportToCsv(project: Project, estimate: FramingEstimate): void {
     'Required Qty',
     'Order Qty (w/ Waste)',
     'Linear Feet',
-    'Unit Cost ($)',
-    'Total Cost ($)',
+    'Unit Cost (₹)',
+    'Total Cost (₹)',
   ]
 
   const rows = estimate.materialLines.map((line) => [
@@ -33,12 +67,16 @@ export function exportToCsv(project: Project, estimate: FramingEstimate): void {
   rows.push(['', '', '', '', '', '', 'Misc Hardware', formatNumber(estimate.miscHardware, 2)])
   rows.push(['', '', '', '', '', '', 'Estimated Total', formatNumber(estimate.estimatedTotal, 2)])
 
-  const csvContent = [headers, ...rows]
+  const allRows = [...meta, headers, ...rows]
+  return allRows
     .map((row) =>
       row.map((cell) => `"${String(cell).replace(/"/g, '""')}"`).join(','),
     )
     .join('\n')
+}
 
+export function exportToCsv(project: Project, estimate: FramingEstimate): void {
+  const csvContent = generateCsvContent(project, estimate)
   const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' })
   const url = URL.createObjectURL(blob)
   const link = document.createElement('a')
@@ -71,7 +109,7 @@ export function exportToPdf(project: Project, estimate: FramingEstimate): void {
   doc.setFontSize(8.5)
   doc.setTextColor(113, 113, 122)
   doc.text(
-    `Project Type: ${project.projectType.toUpperCase()} | System: ${project.measurementSystem} | Waste: ${project.settings.wastePercent}% | Date: ${new Date().toLocaleDateString()}`,
+    `Property Type: ${formatProjectTypeLabel(project)} | System: ${project.measurementSystem} | Waste: ${project.settings.wastePercent}% | Date: ${new Date().toLocaleDateString()}`,
     14,
     y,
   )
@@ -218,7 +256,7 @@ export function getPrintSummaryHtml(
             </div>
           </div>
           <h2 style="margin: 4px 0 0; font-size: 18px; font-weight: 700;">${project.name}</h2>
-          <p style="color: #71717a; margin: 4px 0 0; font-size: 13px;">${project.projectType.toUpperCase()} · ${project.measurementSystem} · ${project.settings.wastePercent}% Waste Allowance</p>
+          <p style="color: #71717a; margin: 4px 0 0; font-size: 13px;">${formatProjectTypeLabel(project)} · ${project.measurementSystem} · ${project.settings.wastePercent}% Waste Allowance</p>
         </div>
         <div style="text-align: right;">
           <div style="font-size: 12px; color: #71717a;">Estimated Project Total</div>

@@ -11,7 +11,7 @@ const now = new Date().toISOString()
 export const demoProject: Project = {
   id: DEMO_PROJECT_ID,
   name: 'Demo House',
-  projectType: 'exterior',
+  projectType: 'residential',
   measurementSystem: 'imperial',
   walls: [
     { id: generateId(), name: 'North Wall', length: 40, height: 8 },

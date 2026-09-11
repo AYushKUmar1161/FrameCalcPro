@@ -298,7 +298,7 @@ export function TakeoffTable({
                       <td className="px-3.5 py-2.5 text-right font-mono text-xs">
                         {isEditing ? (
                           <div className="relative inline-block">
-                            <span className="absolute left-1.5 top-1 text-xs text-zinc-400">$</span>
+                            <span className="absolute left-1.5 top-1 text-xs text-zinc-400">₹</span>
                             <input
                               type="number"
                               min="0"
@@ -477,7 +477,7 @@ export function TakeoffTable({
               onChange={(e) => setCustomForm({ ...customForm, linearFeet: e.target.value })}
             />
             <Input
-              label="Unit Cost ($)"
+              label="Unit Cost (₹)"
               type="number"
               min="0"
               step="0.01"

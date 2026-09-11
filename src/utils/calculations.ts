@@ -7,7 +7,7 @@ export function applyWaste(required: number, wastePercentage: number): number {
   const safe = safeNumber(required)
   const waste = safeNumber(wastePercentage)
   if (safe <= 0) return 0
-  return Math.ceil(safe * (1 + waste / 100))
+  return Math.ceil(safe * (1 + waste / 100) - 1e-9)
 }
 
 export function ceilDiv(numerator: number, denominator: number): number {
@@ -34,9 +34,9 @@ export function sum(numbers: number[]): number {
 
 export function formatCurrency(value: number): string {
   const safe = safeNumber(value)
-  return new Intl.NumberFormat('en-US', {
+  return new Intl.NumberFormat('en-IN', {
     style: 'currency',
-    currency: 'USD',
+    currency: 'INR',
     minimumFractionDigits: 2,
     maximumFractionDigits: 2,
   }).format(safe)

@@ -1,6 +1,9 @@
+import type { PropertyConfig, PropertyTypeId } from './propertyType'
+
 export type MeasurementSystem = 'imperial' | 'metric'
 
 export type ProjectType =
+  | PropertyTypeId
   | 'exterior'
   | 'interior'
   | 'garage'
@@ -95,6 +98,7 @@ export interface Project {
   id: string
   name: string
   projectType: ProjectType
+  propertyConfig?: PropertyConfig
   measurementSystem: MeasurementSystem
   walls: Wall[]
   openings: Opening[]
@@ -110,6 +114,7 @@ export interface Project {
 export interface CreateProjectInput {
   name: string
   projectType: ProjectType
+  propertyConfig?: PropertyConfig
   measurementSystem: MeasurementSystem
   settings: FramingSettings
   notes?: string

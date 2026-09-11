@@ -103,6 +103,8 @@ export function WallsPage() {
             studSpacingIn={studSpacingIn}
             measurementSystem={activeProject.measurementSystem}
             topPlate={activeProject.settings.topPlate}
+            propertyType={activeProject.projectType}
+            propertyConfig={activeProject.propertyConfig}
           />
           <div className="mt-3 flex items-center gap-4 text-xs text-zinc-500">
             <span className="flex items-center gap-1.5">

@@ -38,6 +38,7 @@ export function createProject(input: CreateProjectInput): Project {
     id: generateId(),
     name: input.name.trim(),
     projectType: input.projectType,
+    propertyConfig: input.propertyConfig,
     measurementSystem: input.measurementSystem,
     walls: [],
     openings: [],

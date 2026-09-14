@@ -12,7 +12,6 @@ import { EstimatePage } from './pages/EstimatePage'
 import { ExportPage } from './pages/ExportPage'
 import { SettingsPage } from './pages/SettingsPage'
 import { CalculatorPage } from './pages/CalculatorPage'
-import { AIImageToFramingPage } from './pages/AIImageToFramingPage'
 import { ToastContainer } from './components/ui/Toast'
 import { AuthModal } from './components/auth/AuthModal'
 
@@ -24,10 +23,6 @@ export function AppRouter() {
         <Route element={<PublicLayout />}>
           <Route index element={<LandingPageContent />} />
         </Route>
-
-        {/* Dedicated full-viewport AI Image to 3D Framing */}
-        <Route path="/ai-framing" element={<AIImageToFramingPage />} />
-        <Route path="/projects/:id/ai-framing" element={<AIImageToFramingPage />} />
 
         {/* App shell with sidebar */}
         <Route element={<AppLayout />}>

@@ -30,8 +30,6 @@ export interface FramingElementInfo {
   nominalSize?: string
   actualDimensions?: string
   takeoffKey?: string
-  source?: string
-  confidence?: number
 }
 
 export interface LayerVisibility {

@@ -25,6 +25,11 @@ export interface FramingElementInfo {
   material: string
   dimensions?: string
   notes?: string
+  wallId?: string
+  floor?: string | number
+  nominalSize?: string
+  actualDimensions?: string
+  takeoffKey?: string
 }
 
 export interface LayerVisibility {
@@ -54,7 +59,9 @@ export const DEFAULT_LAYERS: LayerVisibility = {
 }
 
 export type ViewerTool = 'orbit' | 'pan'
-export type ViewMode = 'realistic' | 'technical' | 'wireframe' | 'cutaway'
+export type ViewMode = 'realistic' | 'technical' | 'structural' | 'ghost' | 'sheathed' | 'wireframe' | 'cutaway'
+export type CameraPreset = 'perspective' | 'front' | 'rear' | 'left' | 'right' | 'top' | 'plan' | 'fit'
+export type SectionPlaneType = 'off' | 'x' | 'z' | 'horizontal'
 
 export interface FramingSceneState {
   viewMode: ViewMode

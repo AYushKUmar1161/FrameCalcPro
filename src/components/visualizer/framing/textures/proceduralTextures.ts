@@ -934,3 +934,92 @@ export function getGravelTexture(): THREE.CanvasTexture {
   neighbourhoodCache.gravel = tex
   return tex
 }
+
+// ─── Dusk / Night Sky ────────────────────────────────────────────────────────
+
+let twilightSkyTexture: THREE.CanvasTexture | undefined
+
+/**
+ * Procedural twilight/dusk sky: deep navy at top → warm amber/orange horizon
+ * Matches the reference photo's "evening construction site" atmosphere.
+ */
+export function getTwilightSkyTexture(): THREE.CanvasTexture {
+  if (twilightSkyTexture) return twilightSkyTexture
+
+  const canvas = document.createElement('canvas')
+  canvas.width = 1024
+  canvas.height = 512
+  const ctx = canvas.getContext('2d')!
+
+  // Sky gradient: deep navy top → indigo → warm amber/orange horizon
+  const skyGrad = ctx.createLinearGradient(0, 0, 0, 512)
+  skyGrad.addColorStop(0,    '#08091a')  // near-black top
+  skyGrad.addColorStop(0.18, '#0d1640')  // deep navy
+  skyGrad.addColorStop(0.42, '#1a2a6c')  // indigo blue
+  skyGrad.addColorStop(0.65, '#2d5a8e')  // twilight blue
+  skyGrad.addColorStop(0.80, '#6b3a1f')  // warm dusk brown-orange
+  skyGrad.addColorStop(0.90, '#c4521a')  // amber orange
+  skyGrad.addColorStop(0.96, '#e8720c')  // bright orange horizon
+  skyGrad.addColorStop(1,    '#f5900a')  // intense amber at base
+  ctx.fillStyle = skyGrad
+  ctx.fillRect(0, 0, 1024, 512)
+
+  // Star field in the dark upper portion
+  ctx.fillStyle = '#ffffff'
+  for (let i = 0; i < 280; i++) {
+    const sx = Math.random() * 1024
+    const sy = Math.random() * 300      // only in upper dark region
+    const sr = 0.4 + Math.random() * 1.2
+    const alpha = 0.4 + Math.random() * 0.6
+    ctx.globalAlpha = alpha
+    ctx.beginPath()
+    ctx.arc(sx, sy, sr, 0, Math.PI * 2)
+    ctx.fill()
+  }
+  ctx.globalAlpha = 1.0
+
+  // Faint crescent moon in upper-right
+  const moonX = 820, moonY = 90
+  const moonGrad = ctx.createRadialGradient(moonX, moonY, 0, moonX, moonY, 28)
+  moonGrad.addColorStop(0,   'rgba(255,255,220,0.95)')
+  moonGrad.addColorStop(0.6, 'rgba(255,240,180,0.6)')
+  moonGrad.addColorStop(1,   'rgba(255,240,180,0)')
+  ctx.fillStyle = moonGrad
+  ctx.beginPath()
+  ctx.arc(moonX, moonY, 28, 0, Math.PI * 2)
+  ctx.fill()
+  // Crescent shadow
+  ctx.fillStyle = 'rgba(13, 22, 64, 0.85)'
+  ctx.beginPath()
+  ctx.arc(moonX + 10, moonY - 5, 24, 0, Math.PI * 2)
+  ctx.fill()
+
+  // Horizon glow / orange halo
+  const horizonGlow = ctx.createRadialGradient(512, 512, 60, 512, 512, 420)
+  horizonGlow.addColorStop(0,   'rgba(255, 140, 30, 0.45)')
+  horizonGlow.addColorStop(0.5, 'rgba(200, 80, 20, 0.18)')
+  horizonGlow.addColorStop(1,   'rgba(200, 80, 20, 0)')
+  ctx.fillStyle = horizonGlow
+  ctx.fillRect(0, 300, 1024, 212)
+
+  // Silhouette tree line at the very bottom
+  ctx.fillStyle = 'rgba(5, 5, 15, 0.88)'
+  for (let tx = -20; tx < 1044; tx += 18 + Math.random() * 22) {
+    const th = 30 + Math.random() * 55
+    const tw = 8 + Math.random() * 14
+    ctx.beginPath()
+    ctx.moveTo(tx, 512)
+    ctx.lineTo(tx + tw / 2, 512 - th)
+    ctx.lineTo(tx + tw, 512)
+    ctx.closePath()
+    ctx.fill()
+  }
+
+  const tex = new THREE.CanvasTexture(canvas)
+  tex.colorSpace = THREE.SRGBColorSpace
+  tex.wrapS = THREE.ClampToEdgeWrapping
+  tex.wrapT = THREE.ClampToEdgeWrapping
+  tex.needsUpdate = true
+  twilightSkyTexture = tex
+  return tex
+}

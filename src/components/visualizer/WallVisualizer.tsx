@@ -2,7 +2,7 @@ import { useState, useRef, useCallback } from 'react'
 import type { Opening, Wall } from '../../types/project'
 import { lengthToInches, smallLengthToInches } from '../../utils/units'
 import type { MeasurementSystem } from '../../types/project'
-import { ZoomIn, ZoomOut, RotateCcw, Layers, Box, Compass, Home, Sparkles, Eye, Hammer } from 'lucide-react'
+import { ZoomIn, ZoomOut, RotateCcw, Layers, Compass, Box } from 'lucide-react'
 import { Framing3DViewer, type FramingElementInfo } from './Framing3DViewer'
 
 interface WallVisualizerProps {
@@ -44,23 +44,7 @@ export function WallVisualizer({
   const [blueprintMode, setBlueprintMode] = useState(false)
   const svgContainerRef = useRef<HTMLDivElement>(null)
 
-  // ── Concept 1 Interactive States ──
-  const [assemblyMode, setAssemblyMode] = useState<'room' | 'single'>('room')
-  const [activeWallDirection, setActiveWallDirection] = useState<'all' | 'north' | 'east' | 'south' | 'west'>('all')
-  const [isExploded, setIsExploded] = useState<boolean>(false)
-  const [holographicGhost, setHolographicGhost] = useState<boolean>(false)
-  const [frameToFinish, setFrameToFinish] = useState<boolean>(false)
-
-  // Resolve current active wall from walls array or fallback
-  const resolvedWall = (() => {
-    if (activeWallDirection === 'north') return walls.find((w) => w.name.toLowerCase().includes('north')) || walls[0] || wall
-    if (activeWallDirection === 'south') return walls.find((w) => w.name.toLowerCase().includes('south')) || walls[1] || wall
-    if (activeWallDirection === 'east') return walls.find((w) => w.name.toLowerCase().includes('east')) || walls[2] || wall
-    if (activeWallDirection === 'west') return walls.find((w) => w.name.toLowerCase().includes('west')) || walls[3] || wall
-    return wall || walls[0]
-  })()
-
-  const currentWall = resolvedWall || wall
+  const currentWall = wall || walls[0] || null
 
   const handleZoomIn = useCallback(() => setZoom((z) => Math.min(z + 0.25, 3)), [])
   const handleZoomOut = useCallback(() => setZoom((z) => Math.max(z - 0.25, 0.4)), [])
@@ -208,14 +192,16 @@ export function WallVisualizer({
           </div>
 
           <span className="font-bold text-zinc-900">
-            {assemblyMode === 'room' && activeWallDirection === 'all'
-              ? '4-Wall Structural Assembly'
-              : currentWall.name}
+            {walls.length > 1 ? 'Complete House Framing Model' : currentWall?.name || 'Wall Framing'}
           </span>
-          <span className="text-zinc-400">|</span>
-          <span className="font-mono text-zinc-600">
-            {dimLabel(lengthToInches(currentWall.length, measurementSystem))} × {dimLabel(lengthToInches(currentWall.height, measurementSystem))}
-          </span>
+          {currentWall && (
+            <>
+              <span className="text-zinc-400">|</span>
+              <span className="font-mono text-zinc-600">
+                {dimLabel(lengthToInches(currentWall.length, measurementSystem))} × {dimLabel(lengthToInches(currentWall.height, measurementSystem))}
+              </span>
+            </>
+          )}
           <span className="rounded bg-brand-50 px-1.5 py-0.5 text-[10px] font-bold text-brand-700">
             {studSpacingIn}" O.C.
           </span>
@@ -272,203 +258,25 @@ export function WallVisualizer({
         )}
       </div>
 
-      {/* ── Concept 1 Interactive 4-Wall Tour & Feature Action Strip ── */}
-      {viewMode === '3d' && (
-        <div className="flex flex-wrap items-center justify-between gap-2 px-4 py-2 border-b border-zinc-800/80 bg-[#060A12] text-xs">
-          {/* 1. Wall Compass & Room Tour Switcher */}
-          <div className="flex items-center gap-1.5 overflow-x-auto py-0.5 scrollbar-none">
-            <span className="text-[10px] font-mono uppercase tracking-wider text-zinc-500 mr-1 hidden sm:inline">Wall Tour:</span>
-            <button
-              type="button"
-              onClick={() => {
-                setActiveWallDirection('all')
-                setAssemblyMode('room')
-              }}
-              className={`px-2.5 py-1 rounded-lg text-xs font-semibold flex items-center gap-1.5 transition-all cursor-pointer ${
-                activeWallDirection === 'all' && assemblyMode === 'room'
-                  ? 'bg-brand-500 text-white shadow-xs'
-                  : 'bg-zinc-900 text-zinc-400 hover:text-white hover:bg-zinc-800 border border-zinc-800'
-              }`}
-            >
-              <Home className="h-3.5 w-3.5" />
-              <span>Full Room (360°)</span>
-            </button>
-
-            <button
-              type="button"
-              onClick={() => {
-                setActiveWallDirection('north')
-                setAssemblyMode('room')
-              }}
-              className={`px-2.5 py-1 rounded-lg text-xs font-semibold flex items-center gap-1 transition-all cursor-pointer ${
-                activeWallDirection === 'north'
-                  ? 'bg-brand-500 text-white shadow-xs'
-                  : 'bg-zinc-900 text-zinc-400 hover:text-white hover:bg-zinc-800 border border-zinc-800'
-              }`}
-            >
-              <span>⬆️ North Wall</span>
-            </button>
-
-            <button
-              type="button"
-              onClick={() => {
-                setActiveWallDirection('east')
-                setAssemblyMode('room')
-              }}
-              className={`px-2.5 py-1 rounded-lg text-xs font-semibold flex items-center gap-1 transition-all cursor-pointer ${
-                activeWallDirection === 'east'
-                  ? 'bg-brand-500 text-white shadow-xs'
-                  : 'bg-zinc-900 text-zinc-400 hover:text-white hover:bg-zinc-800 border border-zinc-800'
-              }`}
-            >
-              <span>➡️ East Wall</span>
-            </button>
-
-            <button
-              type="button"
-              onClick={() => {
-                setActiveWallDirection('south')
-                setAssemblyMode('room')
-              }}
-              className={`px-2.5 py-1 rounded-lg text-xs font-semibold flex items-center gap-1 transition-all cursor-pointer ${
-                activeWallDirection === 'south'
-                  ? 'bg-brand-500 text-white shadow-xs'
-                  : 'bg-zinc-900 text-zinc-400 hover:text-white hover:bg-zinc-800 border border-zinc-800'
-              }`}
-            >
-              <span>⬇️ South Wall</span>
-            </button>
-
-            <button
-              type="button"
-              onClick={() => {
-                setActiveWallDirection('west')
-                setAssemblyMode('room')
-              }}
-              className={`px-2.5 py-1 rounded-lg text-xs font-semibold flex items-center gap-1 transition-all cursor-pointer ${
-                activeWallDirection === 'west'
-                  ? 'bg-brand-500 text-white shadow-xs'
-                  : 'bg-zinc-900 text-zinc-400 hover:text-white hover:bg-zinc-800 border border-zinc-800'
-              }`}
-            >
-              <span>⬅️ West Wall</span>
-            </button>
-          </div>
-
-          {/* 2. Concept 1 Action Toggles */}
-          <div className="flex items-center gap-1.5 flex-wrap">
-            {/* Explode Room Axonometric */}
-            <button
-              type="button"
-              onClick={() => setIsExploded((v) => !v)}
-              className={`px-2.5 py-1 rounded-lg text-xs font-semibold flex items-center gap-1.5 transition-all cursor-pointer border ${
-                isExploded
-                  ? 'bg-brand-500/20 text-brand-300 border-brand-500/50 shadow-[0_0_12px_rgba(255,95,109,0.35)]'
-                  : 'bg-zinc-900 text-zinc-300 hover:text-white hover:bg-zinc-800 border-zinc-800'
-              }`}
-              title="Explode 4 walls, roof trusses, and floor joists outward to inspect California corners and sill anchors"
-            >
-              <Sparkles className="h-3.5 w-3.5 text-brand-400" />
-              <span>{isExploded ? 'Collapse' : 'Explode Room'}</span>
-            </button>
-
-            {/* Ghosted Holographic CAD Wireframe Context */}
-            <button
-              type="button"
-              onClick={() => setHolographicGhost((v) => !v)}
-              className={`px-2.5 py-1 rounded-lg text-xs font-semibold flex items-center gap-1.5 transition-all cursor-pointer border ${
-                holographicGhost
-                  ? 'bg-cyan-500/20 text-cyan-300 border-cyan-500/50 shadow-[0_0_12px_rgba(0,240,255,0.35)]'
-                  : 'bg-zinc-900 text-zinc-300 hover:text-white hover:bg-zinc-800 border-zinc-800'
-              }`}
-              title="Focus active wall in solid timber, ghost remaining 3 walls and trusses in glowing cyan wireframe"
-            >
-              <Eye className="h-3.5 w-3.5 text-cyan-400" />
-              <span>{holographicGhost ? 'Solid View' : 'Ghost Context'}</span>
-            </button>
-
-            {/* Frame-to-Finish Cutaway Construction Stages */}
-            <button
-              type="button"
-              onClick={() => setFrameToFinish((v) => !v)}
-              className={`px-2.5 py-1 rounded-lg text-xs font-semibold flex items-center gap-1.5 transition-all cursor-pointer border ${
-                frameToFinish
-                  ? 'bg-amber-500/20 text-amber-300 border-amber-500/50 shadow-[0_0_12px_rgba(245,168,60,0.35)]'
-                  : 'bg-zinc-900 text-zinc-300 hover:text-white hover:bg-zinc-800 border-zinc-800'
-              }`}
-              title="Toggle multi-layer construction stages: bare framing -> OSB & WRB wrap & insulation -> interior drywall & siding"
-            >
-              <Hammer className="h-3.5 w-3.5 text-amber-400" />
-              <span>{frameToFinish ? 'Bare Framing' : 'Frame-to-Finish'}</span>
-            </button>
-
-            {/* 4-Wall Room vs Single Wall Elevation */}
-            <button
-              type="button"
-              onClick={() => setAssemblyMode((m) => (m === 'room' ? 'single' : 'room'))}
-              className={`px-2 py-1 rounded-lg text-xs font-semibold flex items-center gap-1 transition-all cursor-pointer border ${
-                assemblyMode === 'room'
-                  ? 'bg-zinc-800 text-zinc-200 border-zinc-700'
-                  : 'bg-zinc-900 text-zinc-400 hover:text-zinc-200 border-zinc-800'
-              }`}
-              title="Toggle between full 4-wall room assembly and isolated single wall elevation"
-            >
-              <Layers className="h-3.5 w-3.5 text-zinc-400" />
-              <span>{assemblyMode === 'room' ? '4-Wall' : 'Single'}</span>
-            </button>
-          </div>
-        </div>
-      )}
-
       {/* 3D Framing View */}
       {viewMode === '3d' && (
-        <div className="relative w-full h-[580px] sm:h-[620px] bg-[#090E17]">
+        <div className="relative w-full h-[620px] sm:h-[680px] bg-[#090E17]">
           <Framing3DViewer
             wall={currentWall}
-            walls={walls.length > 0 ? walls : [currentWall]}
+            walls={walls.length > 0 ? walls : (currentWall ? [currentWall] : [])}
             openings={openings}
             studSpacingIn={studSpacingIn}
             measurementSystem={measurementSystem}
             topPlate={topPlate}
             propertyType={propertyType}
             propertyConfig={propertyConfig}
-            isFullStructure={assemblyMode === 'room'}
-            isExploded={isExploded}
-            onToggleExploded={() => setIsExploded((v) => !v)}
-            activeWallDirection={activeWallDirection}
-            holographicGhost={holographicGhost}
-            frameToFinish={frameToFinish}
+            isFullStructure={true}
             selectedElementId={selectedElement?.id}
             onSelectElement={(info) => setSelectedElement(info)}
             className="h-full w-full rounded-none border-none"
             showToolbar={true}
             showSidePanels={false}
           />
-          {selectedElement && (
-            <div className="absolute bottom-16 right-4 z-20 max-w-xs p-3.5 rounded-xl bg-zinc-950/95 border border-zinc-800 text-white shadow-2xl backdrop-blur-md space-y-1.5 animate-fade-in">
-              <div className="flex items-center justify-between">
-                <span className="font-bold text-xs text-brand-400">{selectedElement.name}</span>
-                <button
-                  type="button"
-                  onClick={() => setSelectedElement(null)}
-                  className="text-zinc-500 hover:text-zinc-300 text-xs cursor-pointer px-1"
-                >
-                  ✕
-                </button>
-              </div>
-              <div className="grid grid-cols-2 gap-x-2 gap-y-1 text-[11px] font-mono text-zinc-300">
-                <div>Length: <span className="text-white font-bold">{selectedElement.length}</span></div>
-                <div>Qty: <span className="text-brand-400 font-bold">{selectedElement.quantity}</span></div>
-                <div>Spacing: <span className="text-white">{selectedElement.spacing}</span></div>
-                <div>Material: <span className="text-marigold-400">{selectedElement.material}</span></div>
-              </div>
-              {selectedElement.notes && (
-                <p className="text-[10px] text-zinc-400 border-t border-zinc-800 pt-1">
-                  {selectedElement.notes}
-                </p>
-              )}
-            </div>
-          )}
         </div>
       )}
 

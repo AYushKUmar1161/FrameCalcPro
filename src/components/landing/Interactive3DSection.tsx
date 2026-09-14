@@ -166,6 +166,7 @@ export const BUILDING_FIGURES: BuildingFigureConfig[] = [
 
 export function Interactive3DSection() {
   const [modelType, setModelType] = useState<BuildingFigureType>('tower')
+  const [isDusk, setIsDusk] = useState<boolean>(false)
   const [layers, setLayers] = useState<LayerVisibility>({
     ...DEFAULT_LAYERS,
   })
@@ -403,14 +404,28 @@ export function Interactive3DSection() {
 
       {/* ── 6 Building Figures Selector Bar ── */}
       <div className="mb-4">
-        <div className="flex items-center justify-between pb-2 mb-3 border-b border-zinc-800/80">
+        <div className="flex flex-wrap items-center justify-between gap-3 pb-2 mb-3 border-b border-zinc-800/80">
           <span className="text-xs font-mono font-bold uppercase tracking-wider text-zinc-400 flex items-center gap-2">
             <span className="h-2 w-2 rounded-full bg-brand-400" />
             Select Architectural Figure ({BUILDING_FIGURES.length} Types Available)
           </span>
-          <span className="text-[11px] font-mono text-zinc-400 hidden sm:inline-block">
-            Active: <strong className="text-brand-400">{activeFigure.name}</strong>
-          </span>
+          <div className="flex items-center gap-2">
+            <button
+              type="button"
+              onClick={() => setIsDusk(!isDusk)}
+              title="Toggle Day / Dusk Construction Site with Worklights (3D HD)"
+              className={`flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-mono font-bold transition-all cursor-pointer border ${
+                isDusk
+                  ? 'bg-gradient-to-r from-amber-500 to-orange-500 text-zinc-950 border-amber-300 shadow-lg shadow-amber-500/25 ring-1 ring-amber-400/50'
+                  : 'bg-zinc-900/90 text-amber-300 border-amber-500/40 hover:bg-amber-950/40 hover:text-amber-200'
+              }`}
+            >
+              <span>{isDusk ? '🌅 Dusk Worksite Active' : '🌅 Switch to Dusk HD Worksite'}</span>
+            </button>
+            <span className="text-[11px] font-mono text-zinc-400 hidden sm:inline-block">
+              Active: <strong className="text-brand-400">{activeFigure.name}</strong>
+            </span>
+          </div>
         </div>
 
         <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-2">
@@ -489,6 +504,8 @@ export function Interactive3DSection() {
         isFullStructure={true}
         showSidePanels={true}
         showToolbar={true}
+        isDusk={isDusk}
+        onToggleDusk={() => setIsDusk(!isDusk)}
         className="min-h-[580px] lg:h-[680px]"
       />
     </section>

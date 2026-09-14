@@ -32,6 +32,7 @@ export interface WallSystemOptions {
   viewMode?: ViewMode
   numStories?: 1 | 2
   activeWallPrefix?: string
+  isolatedWall?: string
   holographicGhost?: boolean
   frameToFinish?: boolean
   registerMesh: (mesh: THREE.Mesh, info: FramingElementInfo) => void
@@ -115,6 +116,10 @@ export class WallSystem {
       registerMesh,
     } = options
 
+    if (options.isolatedWall && !wallPrefix.toLowerCase().includes(options.isolatedWall.toLowerCase())) {
+      return
+    }
+
     const wallGroup = new THREE.Group()
     wallGroup.name = `wall-group-${wallPrefix}`
     wallGroup.position.set(originX, originY, originZ)
@@ -126,31 +131,12 @@ export class WallSystem {
     const topPlateH = topPlate === 'double' ? plateH * 2 : plateH
     const studSpacingFt = studSpacingIn / 12
 
-    const isGhosted = Boolean(
-      options.holographicGhost &&
-      options.activeWallPrefix &&
-      !wallPrefix.toLowerCase().includes(options.activeWallPrefix.toLowerCase())
-    )
-
     const isActiveWall = Boolean(
       options.activeWallPrefix &&
       wallPrefix.toLowerCase().includes(options.activeWallPrefix.toLowerCase())
     )
 
-    // In Ghosted Holographic CAD mode, non-active walls use glowing cyan wireframe
-    const activeMaterials: FramingMaterialSet = isGhosted
-      ? {
-          ...materials,
-          stud: materials.holographicCyan,
-          plate: materials.holographicCyan,
-          header: materials.holographicCyan,
-          jack: materials.holographicCyan,
-          king: materials.holographicCyan,
-          cripple: materials.holographicCyan,
-          sill: materials.holographicCyan,
-          sheathing: materials.holographicCyan,
-        }
-      : materials
+    const activeMaterials: FramingMaterialSet = materials
 
     // 1. Parse Openings
     const parsedOpenings = this.parseOpenings(
@@ -176,7 +162,7 @@ export class WallSystem {
     })
 
     // Active Wall Glowing Perimeter Indicator
-    if (isActiveWall && !isGhosted) {
+    if (isActiveWall) {
       const activeBorderGeo = new THREE.BoxGeometry(length + 0.1, 0.12, studD + 0.08)
       const activeBorderMesh = new THREE.Mesh(activeBorderGeo, materials.glowingFloorEdge)
       activeBorderMesh.position.set(length / 2, height + 0.06, 0)
@@ -238,7 +224,7 @@ export class WallSystem {
         topPlateH,
         registerMesh,
       })
-    } else if (!isCutawayWall && !isGhosted) {
+    } else if (!isCutawayWall) {
       // Standard Sheathing Layer
       SheathingSystem.buildSheathing(wallGroup, activeMaterials, {
         wallPrefix,
@@ -310,35 +296,77 @@ export class WallSystem {
     const h = propertyType === 'commercial' ? Math.max(wallHeightFt, 10) : wallHeightFt
     const cutawayActive = isCutaway || viewMode === 'cutaway'
 
-    // ─── STORY 1 OPENINGS ───
-    let frontOpenings: Opening[] = openings.length > 0 ? openings.filter((o) => !o.wallId || o.wallId === walls[0]?.id) : []
-    if (frontOpenings.length === 0) {
-      if (propertyType === 'garage-adu') {
-        const gWidth = options.propertyConfig?.garageDoorWidth || 192
-        const gHeight = options.propertyConfig?.garageDoorHeight || 84
-        frontOpenings = [
-          { id: 'garage-main-door', type: 'door', name: `${Math.round(gWidth / 12)}' Overhead Garage Door`, wallId: '', width: gWidth, height: gHeight, quantity: 1, headerSize: '2x12' },
-          { id: 'garage-service-door', type: 'door', name: 'Walk-in Service Door', wallId: '', width: 36, height: 80, quantity: 1, headerSize: '2x8' },
-        ]
-      } else if (propertyType === 'multi-family') {
-        frontOpenings = [
-          { id: 'unit-a-door', type: 'door', name: 'Unit A Entry Door', wallId: '', width: 36, height: 80, quantity: 1, headerSize: '2x8' },
-          { id: 'unit-b-door', type: 'door', name: 'Unit B Entry Door', wallId: '', width: 36, height: 80, quantity: 1, headerSize: '2x8' },
-          { id: 'unit-a-win', type: 'window', name: 'Unit A Living Window', wallId: '', width: 48, height: 48, quantity: 1, headerSize: '2x6' },
-          { id: 'unit-b-win', type: 'window', name: 'Unit B Living Window', wallId: '', width: 48, height: 48, quantity: 1, headerSize: '2x6' },
-        ]
-      } else {
-        // Residential Single-Family (36" × 80" Door + 36" × 48" / 48" × 48" Windows)
-        frontOpenings = [
-          { id: 'main-entry-door', type: 'door', name: '36" × 80" Main Entry Door', wallId: '', width: 36, height: 80, quantity: 1, headerSize: '2x8' },
-          { id: 'living-win-1', type: 'window', name: '36" × 48" Living Room Window', wallId: '', width: 36, height: 48, quantity: 1, headerSize: '2x6' },
-          { id: 'living-win-2', type: 'window', name: '48" × 48" Front Bay Window', wallId: '', width: 48, height: 48, quantity: 1, headerSize: '2x6' },
-        ]
+    // ─── SUB-GROUPS FOR HIERARCHICAL BIM & EXPLODED VIEW ───
+    const story1Group = new THREE.Group()
+    story1Group.name = 'story1-walls-group'
+    group.add(story1Group)
+
+    // ─── DYNAMIC WALL OPENINGS RESOLUTION ───
+    const hasUserOpenings = openings && openings.length > 0
+    let frontOpenings: Opening[] = []
+    let backOpenings: Opening[] = []
+    let leftOpenings: Opening[] = []
+    let rightOpenings: Opening[] = []
+
+    if (hasUserOpenings) {
+      const wall0Id = walls[0]?.id?.toLowerCase() || ''
+      const wall1Id = walls[1]?.id?.toLowerCase() || ''
+      const wall2Id = walls[2]?.id?.toLowerCase() || ''
+      const wall3Id = walls[3]?.id?.toLowerCase() || ''
+
+      frontOpenings = openings.filter(
+        (o) =>
+          o.wallId &&
+          (o.wallId.toLowerCase() === wall0Id ||
+            o.wallId.toLowerCase().includes('north') ||
+            o.wallId.toLowerCase().includes('front')),
+      )
+      backOpenings = openings.filter(
+        (o) =>
+          o.wallId &&
+          (o.wallId.toLowerCase() === wall1Id ||
+            o.wallId.toLowerCase().includes('south') ||
+            o.wallId.toLowerCase().includes('back')),
+      )
+      leftOpenings = openings.filter(
+        (o) =>
+          o.wallId &&
+          (o.wallId.toLowerCase() === wall3Id ||
+            o.wallId.toLowerCase().includes('west') ||
+            o.wallId.toLowerCase().includes('left')),
+      )
+      rightOpenings = openings.filter(
+        (o) =>
+          o.wallId &&
+          (o.wallId.toLowerCase() === wall2Id ||
+            o.wallId.toLowerCase().includes('east') ||
+            o.wallId.toLowerCase().includes('right')),
+      )
+
+      // Fallback for openings without wallId: assign to front wall
+      const unassigned = openings.filter((o) => !o.wallId)
+      if (unassigned.length > 0) {
+        frontOpenings = [...frontOpenings, ...unassigned]
       }
+    } else {
+      // Default architectural demo openings
+      frontOpenings = [
+        { id: 'main-entry-door', type: 'door', name: '36" × 80" Main Entry Door', wallId: '', width: 36, height: 80, quantity: 1, headerSize: '2x8' },
+        { id: 'living-win-1', type: 'window', name: '48" × 48" Front Living Room Window', wallId: '', width: 48, height: 48, quantity: 1, headerSize: '2x6' },
+      ]
+      backOpenings = [
+        { id: 'patio-slider', type: 'door', name: '72" × 80" Patio Slider Door', wallId: '', width: 72, height: 80, quantity: 1, headerSize: '2x10' },
+      ]
+      leftOpenings = [
+        { id: 'left-win-1', type: 'window', name: '36" × 48" Dining Window', wallId: '', width: 36, height: 48, quantity: 1, headerSize: '2x6' },
+      ]
+      rightOpenings = [
+        { id: 'right-win-1', type: 'window', name: '36" × 48" Bedroom Window', wallId: '', width: 36, height: 48, quantity: 1, headerSize: '2x6' },
+      ]
     }
 
     // ─── 1. STORY 1: FRONT EXTERIOR WALL ───
-    this.buildSingleWallSegment(group, materials, {
+    this.buildSingleWallSegment(story1Group, materials, {
       originX: -len / 2,
       originY: 0,
       originZ: width / 2,
@@ -354,14 +382,7 @@ export class WallSystem {
 
     // ─── 2. STORY 1: BACK EXTERIOR WALL ───
     if (!isSectionCut) {
-      const backOpenings: Opening[] = propertyType === 'garage-adu'
-        ? [{ id: 'back-win', type: 'window', name: 'Rear Workshop Window', wallId: '', width: 36, height: 36, quantity: 1, headerSize: '2x6' }]
-        : [
-            { id: 'patio-slider', type: 'door', name: '72" × 80" Patio Slider Door', wallId: '', width: 72, height: 80, quantity: 1, headerSize: '2x10' },
-            { id: 'kitchen-win', type: 'window', name: '36" × 36" Kitchen Window', wallId: '', width: 36, height: 36, quantity: 1, headerSize: '2x6' },
-          ]
-
-      this.buildSingleWallSegment(group, materials, {
+      this.buildSingleWallSegment(story1Group, materials, {
         originX: len / 2,
         originY: 0,
         originZ: -width / 2,
@@ -375,10 +396,7 @@ export class WallSystem {
     }
 
     // ─── 3. STORY 1: LEFT EXTERIOR WALL ───
-    const leftOpenings: Opening[] = [
-      { id: 'left-win-1', type: 'window', name: '36" × 48" Dining Window', wallId: '', width: 36, height: 48, quantity: 1, headerSize: '2x6' },
-    ]
-    this.buildSingleWallSegment(group, materials, {
+    this.buildSingleWallSegment(story1Group, materials, {
       originX: -len / 2,
       originY: 0,
       originZ: -width / 2,
@@ -391,10 +409,7 @@ export class WallSystem {
     })
 
     // ─── 4. STORY 1: RIGHT EXTERIOR WALL ───
-    const rightOpenings: Opening[] = [
-      { id: 'right-win-1', type: 'window', name: '36" × 48" Office Window', wallId: '', width: 36, height: 48, quantity: 1, headerSize: '2x6' },
-    ]
-    this.buildSingleWallSegment(group, materials, {
+    this.buildSingleWallSegment(story1Group, materials, {
       originX: len / 2,
       originY: 0,
       originZ: width / 2,
@@ -413,7 +428,7 @@ export class WallSystem {
       const partitionOpenings: Opening[] = [
         { id: 'interior-hall-door', type: 'door', name: '32" × 80" Interior Passage Door', wallId: '', width: 32, height: 80, quantity: 1, headerSize: '2x6' },
       ]
-      this.buildSingleWallSegment(group, materials, {
+      this.buildSingleWallSegment(story1Group, materials, {
         originX: -len * 0.08,
         originY: 0,
         originZ: -width / 2,
@@ -435,8 +450,17 @@ export class WallSystem {
       const story2ElevationY = h + joistDepth + subfloorThick
       const story2Height = h // 8ft upper walls
 
+      // ─── SECOND-FLOOR HIERARCHICAL BIM SUB-GROUPS ───
+      const upperFloorGroup = new THREE.Group()
+      upperFloorGroup.name = 'upper-floor-group'
+      group.add(upperFloorGroup)
+
+      const story2Group = new THREE.Group()
+      story2Group.name = 'story2-walls-group'
+      group.add(story2Group)
+
       // ─── SECOND-FLOOR FLOOR SYSTEM ───
-      FloorSystem.buildUpperFloorSystem(group, materials, {
+      FloorSystem.buildUpperFloorSystem(upperFloorGroup, materials, {
         length: len,
         width,
         elevationY: h,
@@ -451,7 +475,7 @@ export class WallSystem {
         { id: 'upper-bed1-win', type: 'window', name: '36" × 48" Master Bedroom Window', wallId: '', width: 36, height: 48, quantity: 1, headerSize: '2x6' },
         { id: 'upper-bed2-win', type: 'window', name: '36" × 48" Bedroom 2 Window', wallId: '', width: 36, height: 48, quantity: 1, headerSize: '2x6' },
       ]
-      this.buildSingleWallSegment(group, materials, {
+      this.buildSingleWallSegment(story2Group, materials, {
         originX: -len / 2,
         originY: story2ElevationY,
         originZ: width / 2,
@@ -470,7 +494,7 @@ export class WallSystem {
           { id: 'upper-bath-win', type: 'window', name: '30" × 36" Upper Bath Window', wallId: '', width: 30, height: 36, quantity: 1, headerSize: '2x6' },
           { id: 'upper-bed3-win', type: 'window', name: '36" × 48" Bedroom 3 Window', wallId: '', width: 36, height: 48, quantity: 1, headerSize: '2x6' },
         ]
-        this.buildSingleWallSegment(group, materials, {
+        this.buildSingleWallSegment(story2Group, materials, {
           originX: len / 2,
           originY: story2ElevationY,
           originZ: -width / 2,
@@ -487,7 +511,7 @@ export class WallSystem {
       const story2LeftOpenings: Opening[] = [
         { id: 'upper-left-win', type: 'window', name: '36" × 48" Upper Hall Window', wallId: '', width: 36, height: 48, quantity: 1, headerSize: '2x6' },
       ]
-      this.buildSingleWallSegment(group, materials, {
+      this.buildSingleWallSegment(story2Group, materials, {
         originX: -len / 2,
         originY: story2ElevationY,
         originZ: -width / 2,
@@ -503,7 +527,7 @@ export class WallSystem {
       const story2RightOpenings: Opening[] = [
         { id: 'upper-right-win', type: 'window', name: '36" × 48" Upper Bedroom Window', wallId: '', width: 36, height: 48, quantity: 1, headerSize: '2x6' },
       ]
-      this.buildSingleWallSegment(group, materials, {
+      this.buildSingleWallSegment(story2Group, materials, {
         originX: len / 2,
         originY: story2ElevationY,
         originZ: width / 2,
@@ -520,7 +544,7 @@ export class WallSystem {
         const upperPartitionOpenings: Opening[] = [
           { id: 'upper-bed-door', type: 'door', name: '30" × 80" Bedroom Entry Door', wallId: '', width: 30, height: 80, quantity: 1, headerSize: '2x6' },
         ]
-        this.buildSingleWallSegment(group, materials, {
+        this.buildSingleWallSegment(story2Group, materials, {
           originX: 0,
           originY: story2ElevationY,
           originZ: -width / 2,

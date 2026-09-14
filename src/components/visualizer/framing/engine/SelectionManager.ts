@@ -99,13 +99,32 @@ export class SelectionManager {
     }
   }
 
-  applySelection(selectedElementId: string | null): void {
+  applySelection(selectedElementId: string | null, selectedCategory?: string | null): void {
     this.selectedId = selectedElementId
 
     this.interactiveMeshes.forEach((mesh) => {
-      const isTarget = mesh.userData.info?.id === selectedElementId
+      const info = mesh.userData.info
+      let isTarget = false
 
-      if (selectedElementId === null) {
+      if (selectedElementId) {
+        if (selectedElementId.startsWith('takeoff-')) {
+          const cat = selectedElementId.replace('takeoff-', '')
+          isTarget =
+            info?.category === cat ||
+            (cat === 'plate' && (info?.category === 'sill' || info?.category === 'plate')) ||
+            (cat === 'stud' && (info?.category === 'stud' || info?.category === 'cripple')) ||
+            (cat === 'openings' && (info?.category === 'jack' || info?.category === 'king' || info?.category === 'cripple' || info?.category === 'header'))
+        } else {
+          isTarget = info?.id === selectedElementId
+        }
+      } else if (selectedCategory) {
+        isTarget =
+          info?.category === selectedCategory ||
+          (selectedCategory === 'plate' && info?.category === 'sill') ||
+          (selectedCategory === 'stud' && (info?.category === 'stud' || info?.category === 'cripple'))
+      }
+
+      if (!selectedElementId && !selectedCategory) {
         // No selection: restore all to original materials
         const orig = this.originalMaterials.get(mesh)
         if (orig) mesh.material = orig

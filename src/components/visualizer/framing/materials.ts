@@ -82,14 +82,16 @@ export function createFramingMaterials(
 ): FramingMaterialSet {
   const isWire = isWireframe || viewMode === 'wireframe'
   const isTechnical = viewMode === 'technical'
+  const isStructural = viewMode === 'structural'
+  const isGhost = viewMode === 'ghost'
   const isCutaway = viewMode === 'cutaway'
-  const isRealistic = viewMode === 'realistic' && !isWire
+  const isRealistic = (viewMode === 'realistic' || viewMode === 'sheathed') && !isWire && !isStructural && !isGhost
 
   // Procedural PBR Textures
   const woodTexture = isRealistic ? getWoodGrainTexture() : undefined
   const woodBumpTexture = isRealistic ? getWoodBumpTexture() : undefined
-  const osbTexture = isRealistic ? getOsbTexture() : undefined
-  const subfloorTexture = isRealistic ? getSubfloorTexture() : undefined
+  const osbTexture = isRealistic || viewMode === 'sheathed' ? getOsbTexture() : undefined
+  const subfloorTexture = isRealistic || viewMode === 'sheathed' ? getSubfloorTexture() : undefined
   const concreteTexture = isRealistic ? getConcreteTexture() : undefined
   const galvanizedTexture = isRealistic ? getGalvanizedSteelTexture() : undefined
   const wrbTexture = isRealistic ? getHouseWrapTexture() : undefined
@@ -102,14 +104,19 @@ export function createFramingMaterials(
   const cloudSkyTexture = isRealistic ? getCloudSkyTexture() : undefined
   const gravelTexture = isRealistic ? getGravelTexture() : undefined
 
-  // 1. Common Wall Studs (Warm Douglas Fir / SPF Kiln-Dried with authentic wood grain)
+  // Base lumber color: natural pale unfinished SPF/Pine (not overly saturated orange, rich timber contrast)
+  const realisticLumberColor = 0xf0d8b8
+
+  // 1. Common Wall Studs
   const stud = new THREE.MeshStandardMaterial({
     map: woodTexture,
     bumpMap: woodBumpTexture,
     bumpScale: 0.035,
-    color: isTechnical ? 0xd97706 : (isRealistic ? 0xffffff : 0xdba86b),
-    roughness: 0.52,
+    color: isStructural ? 0xeab308 : isTechnical ? 0xd97706 : isGhost ? 0x38bdf8 : realisticLumberColor,
+    roughness: isRealistic ? 0.72 : 0.52,
     metalness: 0.02,
+    transparent: isGhost,
+    opacity: isGhost ? 0.25 : 1.0,
     wireframe: isWire,
   })
 
@@ -118,9 +125,11 @@ export function createFramingMaterials(
     map: woodTexture,
     bumpMap: woodBumpTexture,
     bumpScale: 0.035,
-    color: isTechnical ? 0xb45309 : (isRealistic ? 0xffffff : 0xb8884d),
-    roughness: 0.55,
+    color: isStructural ? 0xb45309 : isTechnical ? 0xb45309 : isGhost ? 0x38bdf8 : realisticLumberColor,
+    roughness: isRealistic ? 0.72 : 0.55,
     metalness: 0.02,
+    transparent: isGhost,
+    opacity: isGhost ? 0.25 : 1.0,
     wireframe: isWire,
   })
 
@@ -129,9 +138,11 @@ export function createFramingMaterials(
     map: woodTexture,
     bumpMap: woodBumpTexture,
     bumpScale: 0.04,
-    color: isTechnical ? 0xc2410c : (isRealistic ? 0xffffff : 0xc66c30),
-    roughness: 0.5,
+    color: isStructural ? 0xdc2626 : isTechnical ? 0xc2410c : isGhost ? 0x38bdf8 : 0xede0cb,
+    roughness: isRealistic ? 0.68 : 0.5,
     metalness: 0.03,
+    transparent: isGhost,
+    opacity: isGhost ? 0.25 : 1.0,
     wireframe: isWire,
   })
 
@@ -140,9 +151,11 @@ export function createFramingMaterials(
     map: woodTexture,
     bumpMap: woodBumpTexture,
     bumpScale: 0.035,
-    color: isTechnical ? 0x7c3aed : (isRealistic ? 0xffffff : 0xd2a468),
-    roughness: 0.52,
+    color: isStructural ? 0x8b5cf6 : isTechnical ? 0x7c3aed : isGhost ? 0x38bdf8 : realisticLumberColor,
+    roughness: isRealistic ? 0.72 : 0.52,
     metalness: 0.02,
+    transparent: isGhost,
+    opacity: isGhost ? 0.25 : 1.0,
     wireframe: isWire,
   })
 
@@ -151,9 +164,11 @@ export function createFramingMaterials(
     map: woodTexture,
     bumpMap: woodBumpTexture,
     bumpScale: 0.035,
-    color: isTechnical ? 0x2563eb : (isRealistic ? 0xffffff : 0xcb9c62),
-    roughness: 0.52,
+    color: isStructural ? 0x4f46e5 : isTechnical ? 0x2563eb : isGhost ? 0x38bdf8 : realisticLumberColor,
+    roughness: isRealistic ? 0.72 : 0.52,
     metalness: 0.02,
+    transparent: isGhost,
+    opacity: isGhost ? 0.25 : 1.0,
     wireframe: isWire,
   })
 
@@ -162,9 +177,11 @@ export function createFramingMaterials(
     map: woodTexture,
     bumpMap: woodBumpTexture,
     bumpScale: 0.035,
-    color: isTechnical ? 0x059669 : (isRealistic ? 0xffffff : 0xd5aa70),
-    roughness: 0.54,
+    color: isStructural ? 0x0d9488 : isTechnical ? 0x059669 : isGhost ? 0x38bdf8 : realisticLumberColor,
+    roughness: isRealistic ? 0.72 : 0.54,
     metalness: 0.02,
+    transparent: isGhost,
+    opacity: isGhost ? 0.25 : 1.0,
     wireframe: isWire,
   })
 
@@ -173,9 +190,11 @@ export function createFramingMaterials(
     map: woodTexture,
     bumpMap: woodBumpTexture,
     bumpScale: 0.035,
-    color: isTechnical ? 0xb45309 : (isRealistic ? 0xffffff : 0xba8a50),
-    roughness: 0.55,
+    color: isStructural ? 0xd97706 : isTechnical ? 0xb45309 : isGhost ? 0x38bdf8 : realisticLumberColor,
+    roughness: isRealistic ? 0.72 : 0.55,
     metalness: 0.02,
+    transparent: isGhost,
+    opacity: isGhost ? 0.25 : 1.0,
     wireframe: isWire,
   })
 
@@ -184,9 +203,11 @@ export function createFramingMaterials(
     map: woodTexture,
     bumpMap: woodBumpTexture,
     bumpScale: 0.035,
-    color: isTechnical ? 0x0284c7 : (isRealistic ? 0xffffff : 0xc08f58),
-    roughness: 0.54,
+    color: isStructural ? 0x06b6d4 : isTechnical ? 0x0284c7 : isGhost ? 0x38bdf8 : 0xf2eadb,
+    roughness: isRealistic ? 0.72 : 0.54,
     metalness: 0.02,
+    transparent: isGhost,
+    opacity: isGhost ? 0.25 : 1.0,
     wireframe: isWire,
   })
 
@@ -195,9 +216,11 @@ export function createFramingMaterials(
     map: woodTexture,
     bumpMap: woodBumpTexture,
     bumpScale: 0.04,
-    color: isTechnical ? 0x0369a1 : (isRealistic ? 0xffffff : 0xb07c42),
-    roughness: 0.5,
+    color: isStructural ? 0x2563eb : isTechnical ? 0x0369a1 : isGhost ? 0x38bdf8 : 0xecdec7,
+    roughness: isRealistic ? 0.68 : 0.5,
     metalness: 0.03,
+    transparent: isGhost,
+    opacity: isGhost ? 0.25 : 1.0,
     wireframe: isWire,
   })
 
@@ -206,9 +229,11 @@ export function createFramingMaterials(
     map: woodTexture,
     bumpMap: woodBumpTexture,
     bumpScale: 0.035,
-    color: isTechnical ? 0x854d0e : (isRealistic ? 0xffffff : 0xad7a4a),
-    roughness: 0.56,
+    color: isStructural ? 0x10b981 : isTechnical ? 0x854d0e : isGhost ? 0x38bdf8 : 0xf0e6d6,
+    roughness: isRealistic ? 0.72 : 0.56,
     metalness: 0.02,
+    transparent: isGhost,
+    opacity: isGhost ? 0.25 : 1.0,
     wireframe: isWire,
   })
 

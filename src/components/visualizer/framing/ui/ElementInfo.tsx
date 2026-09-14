@@ -1,19 +1,25 @@
-import { Info, Box } from 'lucide-react'
+import { Info, Box, Compass } from 'lucide-react'
 import type { FramingElementInfo } from '../types'
 
 export interface ElementInfoProps {
   element: FramingElementInfo | null
   onClearSelection?: () => void
+  onIsolateWall?: (wallDirection: 'north' | 'south' | 'east' | 'west') => void
   className?: string
 }
 
-export function ElementInfo({ element, onClearSelection, className = '' }: ElementInfoProps) {
+export function ElementInfo({
+  element,
+  onClearSelection,
+  onIsolateWall,
+  className = '',
+}: ElementInfoProps) {
   if (!element) {
     return (
       <div className={`p-4 rounded-2xl bg-zinc-900/50 border border-zinc-800/60 text-zinc-400 space-y-3 select-none ${className}`}>
         <div className="flex items-center justify-between pb-2 border-b border-zinc-800/60">
           <span className="text-xs font-mono font-bold uppercase tracking-wider text-zinc-400">
-            Element Info
+            Selected Member
           </span>
           <span className="text-[10px] font-mono text-zinc-500 bg-zinc-800/80 px-2 py-0.5 rounded">
             Standby
@@ -21,9 +27,9 @@ export function ElementInfo({ element, onClearSelection, className = '' }: Eleme
         </div>
         <div className="py-6 flex flex-col items-center justify-center text-center space-y-2">
           <Box className="h-8 w-8 text-zinc-600 animate-pulse" />
-          <p className="text-xs text-zinc-300 font-medium">Select a Framing Component</p>
+          <p className="text-xs text-zinc-300 font-medium">Click Any Framing Member</p>
           <p className="text-[11px] text-zinc-500 max-w-[220px]">
-            Click any stud, plate, header, joist, rafter, or sheathing panel in 3D to inspect material specs and takeoff quantities.
+            Select any wall stud, sole plate, double top plate, header, joist, or rafter in 3D to inspect BIM metadata.
           </p>
         </div>
       </div>
@@ -50,17 +56,31 @@ export function ElementInfo({ element, onClearSelection, className = '' }: Eleme
     }
   }
 
+  // Derive wall direction from element id or name if applicable
+  const getWallDirection = (): 'north' | 'south' | 'east' | 'west' | null => {
+    const idLower = element.id.toLowerCase()
+    const nameLower = element.name.toLowerCase()
+    if (idLower.includes('front') || nameLower.includes('front') || idLower.includes('north') || nameLower.includes('north')) return 'north'
+    if (idLower.includes('back') || nameLower.includes('back') || idLower.includes('south') || nameLower.includes('south')) return 'south'
+    if (idLower.includes('right') || nameLower.includes('right') || idLower.includes('east') || nameLower.includes('east')) return 'east'
+    if (idLower.includes('left') || nameLower.includes('left') || idLower.includes('west') || nameLower.includes('west')) return 'west'
+    return null
+  }
+
+  const wallDirection = getWallDirection()
+  const floorLevel = element.floor ? (element.floor === 2 ? 'Second Floor' : 'First Floor') : element.id.includes('Story2') ? 'Second Floor' : element.category === 'roof' ? 'Roof Level' : element.category === 'foundation' ? 'Substructure' : 'First Floor'
+
   return (
     <div className={`flex flex-col space-y-3 select-none ${className}`}>
       {/* Header */}
       <div className="flex items-center justify-between pb-2 border-b border-zinc-800/80">
         <span className="text-xs font-mono font-bold uppercase tracking-wider text-zinc-300">
-          Element Info
+          Selected Member
         </span>
         <div className="flex items-center gap-1.5">
           <span className="inline-flex items-center gap-1 text-[10px] font-mono text-brand-400 bg-brand-500/10 border border-brand-500/20 px-2 py-0.5 rounded">
             <span className="h-1.5 w-1.5 rounded-full bg-brand-400 animate-pulse" />
-            Selected
+            Inspect
           </span>
           {onClearSelection && (
             <button
@@ -82,13 +102,13 @@ export function ElementInfo({ element, onClearSelection, className = '' }: Eleme
             {element.name}
           </h3>
           <p className="text-[11px] font-mono text-brand-400 uppercase font-bold tracking-wider mt-0.5">
-            Category: {element.category}
+            ID: {element.id}
           </p>
-          {element.dimensions && (
-            <p className="text-[10px] font-mono text-zinc-400 mt-1">
-              Nominal: {element.dimensions}
-            </p>
-          )}
+          <div className="flex items-center gap-2 mt-1 text-[10px] font-mono text-zinc-400">
+            <span>{floorLevel}</span>
+            <span>•</span>
+            <span className="capitalize">{element.category}</span>
+          </div>
         </div>
 
         {/* 3D Timber Lumber Graphic Swatch */}
@@ -105,18 +125,16 @@ export function ElementInfo({ element, onClearSelection, className = '' }: Eleme
         </div>
       </div>
 
-      {/* Field Metrics Grid (Matches Prompt Specification) */}
+      {/* BIM Structural Inspection Metrics Table (Prompt Req 14) */}
       <div className="p-3 rounded-2xl bg-zinc-950/60 border border-zinc-800/60 space-y-2">
         <div className="flex items-center justify-between py-1.5 border-b border-zinc-800/60 text-xs">
-          <span className="text-zinc-400 font-medium">LENGTH</span>
-          <span className="font-mono font-bold text-zinc-100">{element.length}</span>
+          <span className="text-zinc-400 font-medium">SIZE (NOMINAL)</span>
+          <span className="font-mono font-bold text-zinc-100">{element.nominalSize || element.dimensions || '2×6 SPF'}</span>
         </div>
 
         <div className="flex items-center justify-between py-1.5 border-b border-zinc-800/60 text-xs">
-          <span className="text-zinc-400 font-medium">QUANTITY</span>
-          <span className="font-mono font-bold text-brand-400 text-sm">
-            {typeof element.quantity === 'number' ? `${element.quantity} EA` : element.quantity}
-          </span>
+          <span className="text-zinc-400 font-medium">LENGTH</span>
+          <span className="font-mono font-bold text-zinc-100">{element.length}</span>
         </div>
 
         <div className="flex items-center justify-between py-1.5 border-b border-zinc-800/60 text-xs">
@@ -124,13 +142,33 @@ export function ElementInfo({ element, onClearSelection, className = '' }: Eleme
           <span className="font-mono font-bold text-zinc-100">{element.spacing}</span>
         </div>
 
-        <div className="flex items-center justify-between py-1.5 text-xs">
-          <span className="text-zinc-400 font-medium">MATERIAL</span>
-          <span className="font-mono font-semibold text-marigold-400 text-right truncate max-w-[140px]" title={element.material}>
+        <div className="flex items-center justify-between py-1.5 border-b border-zinc-800/60 text-xs">
+          <span className="text-zinc-400 font-medium">MATERIAL GRADE</span>
+          <span className="font-mono font-semibold text-amber-400 text-right truncate max-w-[140px]" title={element.material}>
             {element.material}
           </span>
         </div>
+
+        <div className="flex items-center justify-between py-1.5 text-xs">
+          <span className="text-zinc-400 font-medium">QUANTITY</span>
+          <span className="font-mono font-bold text-brand-400 text-sm">
+            {typeof element.quantity === 'number' ? `${element.quantity} EA` : element.quantity}
+          </span>
+        </div>
       </div>
+
+      {/* Isolate This Wall Button (Prompt Req 17) */}
+      {wallDirection && onIsolateWall && (
+        <button
+          type="button"
+          onClick={() => onIsolateWall(wallDirection)}
+          className="w-full flex items-center justify-center gap-1.5 py-2 px-3 rounded-xl bg-amber-500/10 hover:bg-amber-500/20 border border-amber-500/30 text-amber-300 text-xs font-semibold cursor-pointer transition-all active:scale-98"
+          title={`Isolate ${wallDirection.toUpperCase()} Wall to inspect without obstructions`}
+        >
+          <Compass className="h-3.5 w-3.5" />
+          <span>Isolate {wallDirection.toUpperCase()} Wall</span>
+        </button>
+      )}
 
       {/* Engineering / Construction Context Notes */}
       {element.notes && (

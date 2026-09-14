@@ -377,6 +377,122 @@ export class SuburbanHomeSystem {
       buildSuburbanWall({ id: 's1-main-left', name: 'Story 1 Left Exterior Wall', x1: -21, z1: -15, x2: -21, z2: 15, height: story1H })
       buildSuburbanWall({ id: 's1-main-back', name: 'Story 1 Rear Exterior Wall', x1: 21, z1: -15, x2: -21, z2: -15, height: story1H })
 
+      // ── Front Gabled Covered Porch Entry Framing (matching reference photograph) ──
+      const porchGroup = new THREE.Group()
+      porchGroup.name = 'front-entry-porch-framing'
+
+      const postMat = materials.header.clone()
+      const postGeom = new THREE.BoxGeometry(0.45, 7.8, 0.45) // 5.5" x 5.5" (6x6 solid post)
+
+      // Left porch post
+      const leftPost = new THREE.Mesh(postGeom, postMat)
+      leftPost.position.set(-2.2, 0.44 + 3.9, 18.2)
+      leftPost.castShadow = true
+      registerMesh(leftPost, {
+        id: 'porch-post-left',
+        name: '6×6 Douglas Fir Front Porch Support Column (Left)',
+        category: 'stud',
+        length: '7.8 ft',
+        quantity: 2,
+        spacing: 'Entry Porch Corner',
+        material: '#1 Structural Douglas Fir Solid Post',
+        dimensions: '5.5" × 5.5" × 7.8\'',
+        notes: 'Carries front gabled porch roof header down to concrete landing stoop.',
+      })
+      porchGroup.add(leftPost)
+
+      // Right porch post
+      const rightPost = new THREE.Mesh(postGeom, postMat)
+      rightPost.position.set(2.2, 0.44 + 3.9, 18.2)
+      rightPost.castShadow = true
+      registerMesh(rightPost, {
+        id: 'porch-post-right',
+        name: '6×6 Douglas Fir Front Porch Support Column (Right)',
+        category: 'stud',
+        length: '7.8 ft',
+        quantity: 2,
+        spacing: 'Entry Porch Corner',
+        material: '#1 Structural Douglas Fir Solid Post',
+        dimensions: '5.5" × 5.5" × 7.8\'',
+        notes: 'Carries front gabled porch roof header down to concrete landing stoop.',
+      })
+      porchGroup.add(rightPost)
+
+      // Front porch header beam across posts
+      const pHeaderGeom = new THREE.BoxGeometry(5.2, 0.77, 0.45)
+      const pHeader = new THREE.Mesh(pHeaderGeom, materials.header.clone())
+      pHeader.position.set(0, 0.44 + 7.8 + 0.38, 18.2)
+      pHeader.castShadow = true
+      porchGroup.add(pHeader)
+
+      // Side return beams connecting back to main wall at z: 15
+      const sideBeamGeom = new THREE.BoxGeometry(0.35, 0.77, 3.2)
+      const leftSideBeam = new THREE.Mesh(sideBeamGeom, materials.header.clone())
+      leftSideBeam.position.set(-2.2, 0.44 + 7.8 + 0.38, 16.6)
+      leftSideBeam.castShadow = true
+      porchGroup.add(leftSideBeam)
+
+      const rightSideBeam = new THREE.Mesh(sideBeamGeom, materials.header.clone())
+      rightSideBeam.position.set(2.2, 0.44 + 7.8 + 0.38, 16.6)
+      rightSideBeam.castShadow = true
+      porchGroup.add(rightSideBeam)
+
+      // Gabled porch roof trusses (front, mid, rear)
+      const pBaseY = 0.44 + 7.8 + 0.77
+      const pPeakY = pBaseY + 2.8
+      const pHalfSpan = 2.6
+      const pRafterLen = Math.sqrt(pHalfSpan * pHalfSpan + 2.8 * 2.8) + 0.5
+      const pRafterAngle = Math.atan2(2.8, pHalfSpan)
+
+      ;[18.2, 16.6, 15.05].forEach((pz) => {
+        const lRaft = new THREE.Mesh(new THREE.BoxGeometry(studW, 5.5 / 12, pRafterLen), materials.roof.clone())
+        lRaft.position.set(-pHalfSpan / 2, pBaseY + 1.4, pz)
+        lRaft.rotation.z = pRafterAngle
+        lRaft.castShadow = true
+        porchGroup.add(lRaft)
+
+        const rRaft = new THREE.Mesh(new THREE.BoxGeometry(studW, 5.5 / 12, pRafterLen), materials.roof.clone())
+        rRaft.position.set(pHalfSpan / 2, pBaseY + 1.4, pz)
+        rRaft.rotation.z = -pRafterAngle
+        rRaft.castShadow = true
+        porchGroup.add(rRaft)
+
+        const tie = new THREE.Mesh(new THREE.BoxGeometry(pHalfSpan * 2, 3.5 / 12, studW), materials.roof.clone())
+        tie.position.set(0, pBaseY + 0.15, pz)
+        porchGroup.add(tie)
+
+        const kp = new THREE.Mesh(new THREE.BoxGeometry(studW, 2.6, 3.5 / 12), materials.roof.clone())
+        kp.position.set(0, pBaseY + 1.3, pz)
+        porchGroup.add(kp)
+      })
+
+      const pRidge = new THREE.Mesh(new THREE.BoxGeometry(studW, 7.25 / 12, 3.6), materials.ridge.clone())
+      pRidge.position.set(0, pPeakY, 16.6)
+      porchGroup.add(pRidge)
+
+      s1Group.add(porchGroup)
+
+      // ── Authentic Diagonal Sway Bracing (matching reference photograph) ──
+      const braceMat = materials.stud.clone()
+      const brace1Len = Math.sqrt(12 * 12 + 7.5 * 7.5)
+      const brace1Angle = Math.atan2(7.5, 12)
+      const brace1 = new THREE.Mesh(new THREE.BoxGeometry(brace1Len, 3.5 / 12, 1.5 / 12), braceMat)
+      brace1.position.set(13.5, 4.4, 15.35)
+      brace1.rotation.z = -brace1Angle
+      brace1.castShadow = true
+      registerMesh(brace1, {
+        id: 'suburban-sway-brace-s1-right',
+        name: '2×4 Diagonal Sway Brace (First Floor Right Bay)',
+        category: 'stud',
+        length: '14.2 ft',
+        quantity: 4,
+        spacing: 'Diagonal Wall Rack Stiffener',
+        material: 'SPF #2 Kiln-Dried 2×4',
+        dimensions: '1.5" × 3.5" × 14.2\'',
+        notes: 'Temporary & permanent diagonal wall bracing resisting racking shear prior to full sheathing.',
+      })
+      s1Group.add(brace1)
+
       homeRoot.add(s1Group)
     }
 
@@ -621,6 +737,33 @@ export class SuburbanHomeSystem {
       buildUpperWall({ id: 's2-right-side', name: 'Upper Right Wall', x1: 21, z1: 15, x2: 21, z2: -15, height: story2H })
       buildUpperWall({ id: 's2-left-side', name: 'Upper Left Wall', x1: -21, z1: -15, x2: -21, z2: 15, height: story2H })
       buildUpperWall({ id: 's2-rear', name: 'Upper Rear Wall', x1: 21, z1: -15, x2: -21, z2: -15, height: story2H })
+
+      // ── Story 2 Diagonal Sway Bracing (matching reference photograph) ──
+      const brace2Len = Math.sqrt(12 * 12 + 7.5 * 7.5)
+      const brace2Angle = Math.atan2(7.5, 12)
+      const brace2 = new THREE.Mesh(new THREE.BoxGeometry(brace2Len, 3.5 / 12, 1.5 / 12), materials.stud.clone())
+      brace2.position.set(13.5, 4.4, 15.35)
+      brace2.rotation.z = brace2Angle
+      brace2.castShadow = true
+      registerMesh(brace2, {
+        id: 'suburban-sway-brace-s2-right',
+        name: '2×4 Diagonal Sway Brace (Second Floor Right Bay)',
+        category: 'stud',
+        length: '14.2 ft',
+        quantity: 4,
+        spacing: 'Upper Wall Diagonal Rack Stiffener',
+        material: 'SPF #2 Kiln-Dried 2×4',
+        dimensions: '1.5" × 3.5" × 14.2\'',
+        notes: 'Diagonal rack brace as installed in reference construction photograph.',
+      })
+      s2Group.add(brace2)
+
+      // Center Bay Diagonal Brace
+      const brace3 = new THREE.Mesh(new THREE.BoxGeometry(9.5, 3.5 / 12, 1.5 / 12), materials.stud.clone())
+      brace3.position.set(0, 4.2, 15.35)
+      brace3.rotation.z = -0.55
+      brace3.castShadow = true
+      s2Group.add(brace3)
 
       homeRoot.add(s2Group)
     }

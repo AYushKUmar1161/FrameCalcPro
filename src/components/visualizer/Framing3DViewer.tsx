@@ -8,6 +8,8 @@ import {
   type ViewerTool,
   type ViewMode,
   type FramingCategory,
+  type CameraPreset,
+  type SectionPlaneType,
   DEFAULT_LAYERS,
   FramingScene,
   LayerControls,
@@ -42,6 +44,7 @@ export interface Framing3DViewerProps {
   className?: string
   height?: string | number
   showToolbar?: boolean
+  showTopHeader?: boolean
   showSidePanels?: boolean
   autoRotateDefault?: boolean
   initialViewMode?: ViewMode
@@ -51,6 +54,8 @@ export interface Framing3DViewerProps {
   activeWallDirection?: 'all' | 'north' | 'east' | 'south' | 'west'
   holographicGhost?: boolean
   frameToFinish?: boolean
+  isDusk?: boolean
+  onToggleDusk?: () => void
 }
 
 export function Framing3DViewer({
@@ -75,20 +80,35 @@ export function Framing3DViewer({
   className = '',
   height = '100%',
   showToolbar = true,
+  showTopHeader = false,
   showSidePanels = true,
   autoRotateDefault = false,
   initialViewMode = 'realistic',
   initialNumStories = 2,
   isExploded: externalIsExploded,
   onToggleExploded,
-  activeWallDirection = 'all',
+  activeWallDirection: externalActiveWallDirection,
   holographicGhost = false,
   frameToFinish = false,
+  isDusk: externalIsDusk,
+  onToggleDusk,
 }: Framing3DViewerProps) {
-  // View mode and stories state
+  // View mode, presets, and inspection state
   const [viewMode, setViewMode] = useState<ViewMode>(initialViewMode)
+  const [cameraPreset, setCameraPreset] = useState<CameraPreset>('perspective')
+  const [sectionPlaneType, setSectionPlaneType] = useState<SectionPlaneType>('off')
+  const [sectionPlanePosition, setSectionPlanePosition] = useState<number>(0)
+  const [explodedProgress, setExplodedProgress] = useState<number>(0)
+  const [internalActiveWallDirection, setInternalActiveWallDirection] = useState<'all' | 'north' | 'east' | 'south' | 'west'>('all')
+  const activeWallDirection = externalActiveWallDirection || internalActiveWallDirection
+
   const [numStories, setNumStories] = useState<1 | 2>(initialNumStories)
   const [constructionProgress, setConstructionProgress] = useState<number>(100)
+
+  // Dusk / Worklights site state
+  const [internalIsDusk, setInternalIsDusk] = useState<boolean>(false)
+  const isDusk = externalIsDusk !== undefined ? externalIsDusk : internalIsDusk
+  const toggleDusk = onToggleDusk || (() => setInternalIsDusk((v) => !v))
 
   // Internal layer and isolation state
   const [internalLayers, setInternalLayers] = useState<LayerVisibility>(externalLayers || DEFAULT_LAYERS)
@@ -132,6 +152,21 @@ export function Framing3DViewer({
   const [showDimensions, setShowDimensions] = useState(false)
   const [autoRotate, setAutoRotate] = useState(autoRotateDefault)
   const [controlMode, setControlMode] = useState<ViewerTool>('orbit')
+
+  const handleSectionPlaneChange = useCallback((type: SectionPlaneType, pos: number) => {
+    setSectionPlaneType(type)
+    setSectionPlanePosition(pos)
+    setIsSectionCut(type !== 'off')
+  }, [])
+
+  const handleExplodedProgressChange = useCallback((progress: number) => {
+    setExplodedProgress(progress)
+    setInternalIsExploded(progress > 0.05)
+  }, [])
+
+  const handleActiveWallDirectionChange = useCallback((dir: 'all' | 'north' | 'east' | 'south' | 'west') => {
+    setInternalActiveWallDirection(dir)
+  }, [])
 
   // Mobile drawer state
   const [mobileDrawer, setMobileDrawer] = useState<'none' | 'layers' | 'info' | 'takeoff'>('none')
@@ -314,39 +349,41 @@ export function Framing3DViewer({
       style={{ height }}
     >
       {/* ── Top Bar: Brand, Specifications, Stud Spacing Switcher ── */}
-      <div className="flex flex-wrap items-center justify-between gap-3 px-4 py-3 border-b border-zinc-800/80 bg-zinc-950/75 backdrop-blur-md z-10 shrink-0">
-        <div className="flex items-center gap-2.5">
-          <div className="flex h-7 w-7 items-center justify-center rounded-lg bg-brand-500/10 border border-brand-500/30 text-brand-400">
-            <Box className="h-4 w-4" />
-          </div>
-          <div>
-            <div className="flex items-center gap-2">
-              <span className="font-mono text-xs font-black tracking-wider text-white">
-                FRAMECALCPRO 3D ENGINE
-              </span>
-              <span className="hidden md:inline-flex items-center gap-1 text-[10px] font-mono text-emerald-400 bg-emerald-500/10 px-1.5 py-0.5 rounded border border-emerald-500/20">
-                <span className="h-1.5 w-1.5 rounded-full bg-emerald-400 animate-pulse" />
-                LIVE
-              </span>
+      {showTopHeader && (
+        <div className="flex flex-wrap items-center justify-between gap-3 px-4 py-3 border-b border-zinc-800/80 bg-zinc-950/75 backdrop-blur-md z-10 shrink-0">
+          <div className="flex items-center gap-2.5">
+            <div className="flex h-7 w-7 items-center justify-center rounded-lg bg-brand-500/10 border border-brand-500/30 text-brand-400">
+              <Box className="h-4 w-4" />
             </div>
-            <div className="flex items-center gap-1.5 text-[10px] font-mono text-zinc-400">
-              <span>{isFullStructure ? 'RESIDENTIAL ENVELOPE' : 'WALL ELEVATION'}</span>
-              <span>•</span>
-              <span className="text-brand-400 font-bold">{wallThickness.toUpperCase()}</span>
-              <span>•</span>
-              <span>{topPlate.toUpperCase()} PLATE</span>
+            <div>
+              <div className="flex items-center gap-2">
+                <span className="font-mono text-xs font-black tracking-wider text-white">
+                  FRAMECALCPRO 3D ENGINE
+                </span>
+                <span className="hidden md:inline-flex items-center gap-1 text-[10px] font-mono text-emerald-400 bg-emerald-500/10 px-1.5 py-0.5 rounded border border-emerald-500/20">
+                  <span className="h-1.5 w-1.5 rounded-full bg-emerald-400 animate-pulse" />
+                  LIVE
+                </span>
+              </div>
+              <div className="flex items-center gap-1.5 text-[10px] font-mono text-zinc-400">
+                <span>{isFullStructure ? 'RESIDENTIAL ENVELOPE' : 'WALL ELEVATION'}</span>
+                <span>•</span>
+                <span className="text-brand-400 font-bold">{wallThickness.toUpperCase()}</span>
+                <span>•</span>
+                <span>{topPlate.toUpperCase()} PLATE</span>
+              </div>
             </div>
           </div>
-        </div>
 
-        {/* Stud Spacing Quick Switcher (Prompt Req 16) */}
-        {onStudSpacingChange && (
-          <StudSpacingControl
-            value={studSpacingIn}
-            onChange={onStudSpacingChange}
-          />
-        )}
-      </div>
+          {/* Stud Spacing Quick Switcher (Prompt Req 16) */}
+          {onStudSpacingChange && (
+            <StudSpacingControl
+              value={studSpacingIn}
+              onChange={onStudSpacingChange}
+            />
+          )}
+        </div>
+      )}
 
       {/* ── Main Layout Body: 3 Columns on Desktop, Dominant 3D on Tablet/Mobile ── */}
       <div className="relative flex-1 grid grid-cols-1 lg:grid-cols-12 min-h-[460px] overflow-hidden">
@@ -430,21 +467,6 @@ export function Framing3DViewer({
 
           {/* Active Mode Badges (Section, Exploded, Measure, Cutaway, Tech) */}
           <div className="absolute top-3 left-3 z-20 pointer-events-none flex flex-wrap items-center gap-1.5">
-            {viewMode === 'cutaway' && (
-              <span className="font-mono text-[10px] text-orange-300 bg-orange-950/80 border border-orange-800/80 px-2 py-0.5 rounded-md backdrop-blur-md">
-                CUTAWAY DOLLHOUSE
-              </span>
-            )}
-            {viewMode === 'technical' && (
-              <span className="font-mono text-[10px] text-blue-300 bg-blue-950/80 border border-blue-800/80 px-2 py-0.5 rounded-md backdrop-blur-md">
-                TECHNICAL SCHEMATIC
-              </span>
-            )}
-            {numStories === 2 && (
-              <span className="hidden sm:inline-flex font-mono text-[10px] text-emerald-300 bg-emerald-950/80 border border-emerald-800/80 px-2 py-0.5 rounded-md backdrop-blur-md">
-                2-STORY ENVELOPE
-              </span>
-            )}
             {constructionProgress < 100 && (
               <span className="font-mono text-[10px] text-purple-300 bg-purple-950/80 border border-purple-800/80 px-2 py-0.5 rounded-md backdrop-blur-md">
                 PROGRESS: {constructionProgress}%
@@ -489,12 +511,17 @@ export function Framing3DViewer({
             isSectionCut={isSectionCut}
             isCutaway={viewMode === 'cutaway'}
             isExploded={isExploded}
+            explodedProgress={explodedProgress}
+            sectionPlaneType={sectionPlaneType}
+            sectionPlanePosition={sectionPlanePosition}
+            cameraPreset={cameraPreset}
             showDimensions={showDimensions}
             autoRotate={autoRotate}
             controlMode={controlMode}
             activeWallDirection={activeWallDirection}
             holographicGhost={holographicGhost}
             frameToFinish={frameToFinish}
+            isDusk={isDusk}
             onSelectElement={handleSelect}
             onHoverElement={setHoveredName}
             className="w-full h-full"
@@ -513,18 +540,29 @@ export function Framing3DViewer({
                 onToggleDimensions={() => setShowDimensions(!showDimensions)}
                 isSectionCut={isSectionCut}
                 onToggleSectionCut={() => setIsSectionCut(!isSectionCut)}
+                sectionPlaneType={sectionPlaneType}
+                sectionPlanePosition={sectionPlanePosition}
+                onSectionPlaneChange={handleSectionPlaneChange}
                 isExploded={isExploded}
                 onToggleExploded={toggleExploded}
+                explodedProgress={explodedProgress}
+                onExplodedProgressChange={handleExplodedProgressChange}
                 isWireframe={isWireframe || viewMode === 'wireframe'}
                 onToggleWireframe={handleToggleWireframe}
                 viewMode={viewMode}
                 onViewModeChange={handleViewModeChange}
+                cameraPreset={cameraPreset}
+                onCameraPresetChange={setCameraPreset}
                 numStories={numStories}
                 onStoriesChange={setNumStories}
                 constructionProgress={constructionProgress}
                 onProgressChange={setConstructionProgress}
+                activeWallDirection={activeWallDirection}
+                onActiveWallDirectionChange={handleActiveWallDirectionChange}
                 onResetCamera={handleResetCamera}
                 isFullStructure={isFullStructure}
+                isDusk={isDusk}
+                onToggleDusk={toggleDusk}
               />
             </div>
           )}
@@ -608,6 +646,7 @@ export function Framing3DViewer({
                 <ElementInfo
                   element={internalSelectedElement}
                   onClearSelection={() => setInternalSelectedElement(null)}
+                  onIsolateWall={(dir) => setInternalActiveWallDirection(dir)}
                 />
               )}
 
@@ -631,6 +670,7 @@ export function Framing3DViewer({
             <ElementInfo
               element={internalSelectedElement}
               onClearSelection={() => setInternalSelectedElement(null)}
+              onIsolateWall={(dir) => setInternalActiveWallDirection(dir)}
             />
 
             <TakeoffSummary

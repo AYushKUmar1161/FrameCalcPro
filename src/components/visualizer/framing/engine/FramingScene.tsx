@@ -299,135 +299,427 @@ export function FramingScene({
 
       const isDaytimeReal = viewMode === 'realistic' && !isWireframe
       if (isDaytimeReal) {
-        sceneRef.current.background = new THREE.Color(0xa0d5f8)
-        sceneRef.current.fog = new THREE.FogExp2(0xcfe9fc, 0.0035)
+        // ── Sky ────────────────────────────────────────────────────────────────
+        // Cloud sky billboard — large vertical plane far behind the scene
+        sceneRef.current.background = new THREE.Color(0x7fb8d8)
+        sceneRef.current.fog = new THREE.FogExp2(0xb8d8ec, 0.0025)
         if (gridHelperRef.current) gridHelperRef.current.visible = false
-        if (keySunRef.current) keySunRef.current.intensity = 2.8
+        if (keySunRef.current) keySunRef.current.intensity = 3.0
         if (groundBounceRef.current) groundBounceRef.current.color.set(0x4d7c0f)
 
-        // 1. Verdant suburban grass lawn plane
-        const lawnGeom = new THREE.PlaneGeometry(240, 240)
+        const skyPlane = new THREE.Mesh(
+          new THREE.PlaneGeometry(600, 250),
+          materials.cloudSkyMat,
+        )
+        skyPlane.position.set(0, 60, -200)
+        skyPlane.receiveShadow = false
+        envGroup.add(skyPlane)
+
+        // ── Ground Zones ───────────────────────────────────────────────────────
+        // 1. Main lawn (neighbour side + back)
+        const lawnGeom = new THREE.PlaneGeometry(320, 280)
         const lawnMesh = new THREE.Mesh(lawnGeom, materials.grassLawn)
         lawnMesh.rotation.x = -Math.PI / 2
-        lawnMesh.position.y = -1.2
+        lawnMesh.position.set(0, -1.2, -30)
         lawnMesh.receiveShadow = true
         envGroup.add(lawnMesh)
 
-        // 2. Western red cedar perimeter privacy fence (Matching reference photograph)
+        // 2. Gravel / dirt construction pad around the house
+        const gravelPad = new THREE.Mesh(
+          new THREE.PlaneGeometry(58, 55),
+          materials.gravelPad,
+        )
+        gravelPad.rotation.x = -Math.PI / 2
+        gravelPad.position.set(0, -1.18, 0)
+        gravelPad.receiveShadow = true
+        envGroup.add(gravelPad)
+
+        // 3. Concrete driveway apron (connects house front to street)
+        const driveway = new THREE.Mesh(
+          new THREE.PlaneGeometry(22, 22),
+          materials.concreteSidewalk,
+        )
+        driveway.rotation.x = -Math.PI / 2
+        driveway.position.set(10, -1.17, 24)
+        driveway.receiveShadow = true
+        envGroup.add(driveway)
+
+        // 4. Grass median strip (between curb and sidewalk)
+        const median = new THREE.Mesh(
+          new THREE.PlaneGeometry(300, 4),
+          materials.grassLawn,
+        )
+        median.rotation.x = -Math.PI / 2
+        median.position.set(0, -1.17, 34.5)
+        median.receiveShadow = true
+        envGroup.add(median)
+
+        // ── Street Infrastructure ──────────────────────────────────────────────
+        // 5. Asphalt road slab
+        const roadMesh = new THREE.Mesh(
+          new THREE.PlaneGeometry(320, 28),
+          materials.asphalt,
+        )
+        roadMesh.rotation.x = -Math.PI / 2
+        roadMesh.position.set(0, -1.16, 50)
+        roadMesh.receiveShadow = true
+        envGroup.add(roadMesh)
+
+        // 6. Concrete sidewalk slab
+        const sidewalk = new THREE.Mesh(
+          new THREE.PlaneGeometry(300, 7),
+          materials.concreteSidewalk,
+        )
+        sidewalk.rotation.x = -Math.PI / 2
+        sidewalk.position.set(0, -1.15, 38)
+        sidewalk.receiveShadow = true
+        envGroup.add(sidewalk)
+
+        // 7. Concrete curb (raised box along street edge)
+        const curb = new THREE.Mesh(
+          new THREE.BoxGeometry(300, 0.7, 1.5),
+          materials.concreteSidewalk,
+        )
+        curb.position.set(0, -0.85, 36.5)
+        curb.castShadow = true
+        curb.receiveShadow = true
+        envGroup.add(curb)
+
+        // ── Backyard Cedar Fence ───────────────────────────────────────────────
         const fenceH = 6.5
         const fenceThick = 0.4
         const fenceMat = materials.cedarFence
 
-        // Left Fence Line (X = -42, Z from -48 to 32)
-        const leftFenceLen = 80
-        const leftFence = new THREE.Mesh(new THREE.BoxGeometry(fenceThick, fenceH, leftFenceLen), fenceMat)
-        leftFence.position.set(-42, -1.2 + fenceH / 2, -8)
-        leftFence.castShadow = true
-        leftFence.receiveShadow = true
+        // Left fence
+        const leftFence = new THREE.Mesh(new THREE.BoxGeometry(fenceThick, fenceH, 82), fenceMat)
+        leftFence.position.set(-42, -1.2 + fenceH / 2, -6)
+        leftFence.castShadow = true; leftFence.receiveShadow = true
         envGroup.add(leftFence)
 
-        // Right Fence Line (X = 42, Z from -48 to 32)
-        const rightFenceLen = 80
-        const rightFence = new THREE.Mesh(new THREE.BoxGeometry(fenceThick, fenceH, rightFenceLen), fenceMat)
-        rightFence.position.set(42, -1.2 + fenceH / 2, -8)
-        rightFence.castShadow = true
-        rightFence.receiveShadow = true
+        // Right fence
+        const rightFence = new THREE.Mesh(new THREE.BoxGeometry(fenceThick, fenceH, 82), fenceMat)
+        rightFence.position.set(42, -1.2 + fenceH / 2, -6)
+        rightFence.castShadow = true; rightFence.receiveShadow = true
         envGroup.add(rightFence)
 
-        // Back Fence Line (Z = -48, X from -42 to 42)
-        const backFenceLen = 84
-        const backFence = new THREE.Mesh(new THREE.BoxGeometry(backFenceLen, fenceH, fenceThick), fenceMat)
-        backFence.position.set(0, -1.2 + fenceH / 2, -48)
-        backFence.castShadow = true
-        backFence.receiveShadow = true
+        // Back fence
+        const backFence = new THREE.Mesh(new THREE.BoxGeometry(86, fenceH, fenceThick), fenceMat)
+        backFence.position.set(0, -1.2 + fenceH / 2, -47)
+        backFence.castShadow = true; backFence.receiveShadow = true
         envGroup.add(backFence)
 
-        // Fence Posts every 8ft along perimeter
-        const postGeom = new THREE.BoxGeometry(0.5, fenceH + 0.3, 0.5)
-        for (let fz = -48; fz <= 32; fz += 8) {
+        // Fence posts every 8ft
+        const postGeom = new THREE.BoxGeometry(0.5, fenceH + 0.4, 0.5)
+        for (let fz = -47; fz <= 35; fz += 8) {
           const lp = new THREE.Mesh(postGeom, fenceMat)
-          lp.position.set(-42, -1.2 + (fenceH + 0.3) / 2, fz)
-          lp.castShadow = true
-          envGroup.add(lp)
-
+          lp.position.set(-42, -1.2 + (fenceH + 0.4) / 2, fz)
+          lp.castShadow = true; envGroup.add(lp)
           const rp = new THREE.Mesh(postGeom, fenceMat)
-          rp.position.set(42, -1.2 + (fenceH + 0.3) / 2, fz)
-          rp.castShadow = true
-          envGroup.add(rp)
+          rp.position.set(42, -1.2 + (fenceH + 0.4) / 2, fz)
+          rp.castShadow = true; envGroup.add(rp)
         }
 
-        // 3. Background Suburban Houses (As seen in the reference photo)
-        const houseBodyMat = new THREE.MeshStandardMaterial({
-          color: 0xf1f5f9,
-          roughness: 0.7,
+        // ── Neighbour House Helper ─────────────────────────────────────────────
+        const addNeighbourHouse = (
+          x: number, z: number, rotY: number,
+          w: number, h: number, d: number,
+          wallMat: THREE.MeshStandardMaterial,
+          roofMat: THREE.MeshStandardMaterial,
+          style: 'craftsman' | 'colonial' | 'ranch',
+        ) => {
+          const hGrp = new THREE.Group()
+          hGrp.position.set(x, -1.2, z)
+          hGrp.rotation.y = rotY
+
+          // Body
+          const body = new THREE.Mesh(new THREE.BoxGeometry(w, h, d), wallMat)
+          body.position.y = h / 2
+          body.castShadow = true; body.receiveShadow = true
+          hGrp.add(body)
+
+          // Roof
+          if (style === 'craftsman') {
+            // Hip roof (pyramid-ish)
+            const roofMesh = new THREE.Mesh(new THREE.ConeGeometry(Math.max(w, d) * 0.72, h * 0.55, 4), roofMat)
+            roofMesh.position.y = h + h * 0.55 * 0.42
+            roofMesh.rotation.y = Math.PI / 4
+            roofMesh.castShadow = true
+            hGrp.add(roofMesh)
+          } else if (style === 'colonial') {
+            // Gable roof (prism)
+            const roofGeom = new THREE.CylinderGeometry(0, w * 0.58, h * 0.6, 4, 1)
+            const roofMesh = new THREE.Mesh(roofGeom, roofMat)
+            roofMesh.position.y = h + h * 0.6 * 0.35
+            roofMesh.rotation.y = Math.PI / 4
+            roofMesh.castShadow = true
+            hGrp.add(roofMesh)
+          } else {
+            // Ranch flat gable
+            const roofMesh = new THREE.Mesh(new THREE.CylinderGeometry(0, Math.max(w,d)*0.6, h*0.35, 4, 1), roofMat)
+            roofMesh.position.y = h + h * 0.35 * 0.3
+            roofMesh.rotation.y = Math.PI / 4
+            roofMesh.castShadow = true
+            hGrp.add(roofMesh)
+          }
+
+          // Porch posts (2 columns)
+          const postMat = new THREE.MeshStandardMaterial({ color: 0xf0ece4, roughness: 0.55, metalness: 0.04 })
+          const pPostGeom = new THREE.CylinderGeometry(0.28, 0.28, h * 0.5, 8)
+          const pp1 = new THREE.Mesh(pPostGeom, postMat)
+          pp1.position.set(-w * 0.28, h * 0.25, d * 0.52)
+          pp1.castShadow = true; hGrp.add(pp1)
+          const pp2 = new THREE.Mesh(pPostGeom, postMat)
+          pp2.position.set(w * 0.28, h * 0.25, d * 0.52)
+          pp2.castShadow = true; hGrp.add(pp2)
+
+          // Garage door
+          const garMat = new THREE.MeshStandardMaterial({ color: 0xd4cfc8, roughness: 0.5, metalness: 0.18 })
+          const garageDoor = new THREE.Mesh(new THREE.BoxGeometry(w * 0.38, h * 0.38, 0.3), garMat)
+          garageDoor.position.set(w * 0.28, h * 0.19, d * 0.51)
+          hGrp.add(garageDoor)
+
+          // Chimney
+          const chimMat = new THREE.MeshStandardMaterial({ color: 0x8b6050, roughness: 0.88, metalness: 0.02 })
+          const chim = new THREE.Mesh(new THREE.BoxGeometry(1.8, h * 0.9, 1.8), chimMat)
+          chim.position.set(w * 0.3, h * 0.85, -d * 0.15)
+          chim.castShadow = true; hGrp.add(chim)
+
+          // Front door
+          const doorMat = new THREE.MeshStandardMaterial({ color: 0x2c3e50, roughness: 0.45, metalness: 0.12 })
+          const door = new THREE.Mesh(new THREE.BoxGeometry(2, h * 0.44, 0.25), doorMat)
+          door.position.set(-w * 0.1, h * 0.22, d * 0.52)
+          hGrp.add(door)
+
+          // Windows (2 front)
+          const winMat = new THREE.MeshStandardMaterial({ color: 0xadd8e6, roughness: 0.08, metalness: 0.85, transparent: true, opacity: 0.72 })
+          const winGeom = new THREE.BoxGeometry(2.4, 2.8, 0.18)
+          const win1 = new THREE.Mesh(winGeom, winMat)
+          win1.position.set(-w * 0.32, h * 0.55, d * 0.52); hGrp.add(win1)
+          const win2 = new THREE.Mesh(winGeom, winMat)
+          win2.position.set(w * 0.05, h * 0.55, d * 0.52); hGrp.add(win2)
+
+          envGroup.add(hGrp)
+        }
+
+        // Left Neighbour: Craftsman Bungalow
+        addNeighbourHouse(-72, 0, 0, 28, 16, 36, materials.neighbourWall1, materials.neighbourRoof1, 'craftsman')
+        // Right Neighbour: Colonial Two-Story
+        addNeighbourHouse(72, 0, 0, 26, 22, 32, materials.neighbourWall2, materials.neighbourRoof2, 'colonial')
+        // Far-Left Neighbour: Ranch One-Story (partially behind fence)
+        addNeighbourHouse(-115, -8, 0.08, 38, 11, 28, materials.neighbourWall3, materials.neighbourRoof3, 'ranch')
+
+        // ── Pickup Truck on Street ─────────────────────────────────────────────
+        const truck = new THREE.Group()
+        truck.position.set(22, -1.2, 48)
+
+        // Cab
+        const cab = new THREE.Mesh(new THREE.BoxGeometry(8, 5.2, 6.5), materials.truckPaint)
+        cab.position.set(0, 4.5, -2.5)
+        cab.castShadow = true; truck.add(cab)
+
+        // Bed
+        const bed = new THREE.Mesh(new THREE.BoxGeometry(8, 3.2, 8), materials.truckPaint)
+        bed.position.set(0, 3.4, 4.8)
+        bed.castShadow = true; truck.add(bed)
+
+        // Windshield (tilted glass)
+        const windshield = new THREE.Mesh(new THREE.BoxGeometry(7.6, 3.4, 0.15), materials.truckGlass)
+        windshield.position.set(0, 5.9, -5.4)
+        windshield.rotation.x = 0.22
+        truck.add(windshield)
+
+        // Rear window
+        const rearWin = new THREE.Mesh(new THREE.BoxGeometry(7.2, 2.8, 0.15), materials.truckGlass)
+        rearWin.position.set(0, 5.4, 0.55)
+        truck.add(rearWin)
+
+        // Side windows
+        const sideWinGeom = new THREE.BoxGeometry(0.15, 2.5, 4.5)
+        const sideWinL = new THREE.Mesh(sideWinGeom, materials.truckGlass)
+        sideWinL.position.set(-4.1, 5.8, -2.5); truck.add(sideWinL)
+        const sideWinR = new THREE.Mesh(sideWinGeom, materials.truckGlass)
+        sideWinR.position.set(4.1, 5.8, -2.5); truck.add(sideWinR)
+
+        // Wheels (4x)
+        const wheelGeom = new THREE.CylinderGeometry(1.35, 1.35, 1.1, 14)
+        const wheelPositions = [[-4.2, 1.35, -3.8], [4.2, 1.35, -3.8], [-4.2, 1.35, 4.2], [4.2, 1.35, 4.2]]
+        wheelPositions.forEach(([wx, wy, wz]) => {
+          const wheel = new THREE.Mesh(wheelGeom, materials.truckTire)
+          wheel.rotation.z = Math.PI / 2
+          wheel.position.set(wx, wy, wz)
+          wheel.castShadow = true; truck.add(wheel)
+          // Hub cap
+          const hub = new THREE.Mesh(new THREE.CylinderGeometry(0.65, 0.65, 1.15, 8), materials.truckChrome)
+          hub.rotation.z = Math.PI / 2
+          hub.position.set(wx, wy, wz)
+          truck.add(hub)
         })
-        const houseRoofMat = new THREE.MeshStandardMaterial({
-          color: 0x475569,
-          roughness: 0.6,
+
+        // Front bumper
+        const frontBumper = new THREE.Mesh(new THREE.BoxGeometry(8.4, 1.2, 0.6), materials.truckChrome)
+        frontBumper.position.set(0, 1.8, -6.1)
+        truck.add(frontBumper)
+
+        // Headlights
+        const headlightMat = new THREE.MeshStandardMaterial({ color: 0xffffee, roughness: 0.05, metalness: 0.5, emissive: 0xffffaa, emissiveIntensity: 0.3 })
+        const hLight = new THREE.Mesh(new THREE.BoxGeometry(1.6, 1.0, 0.2), headlightMat)
+        hLight.position.set(-2.8, 2.5, -6.1); truck.add(hLight)
+        const hLightR = hLight.clone(); hLightR.position.set(2.8, 2.5, -6.1); truck.add(hLightR)
+
+        // Tail gate
+        const tailgate = new THREE.Mesh(new THREE.BoxGeometry(8, 3.0, 0.25), materials.truckPaint)
+        tailgate.position.set(0, 3.4, 8.9); truck.add(tailgate)
+
+        truck.rotation.y = -Math.PI / 2
+        envGroup.add(truck)
+
+        // ── Utility Poles + Power Lines ────────────────────────────────────────
+        const poleXPositions = [-80, -28, 28, 80]
+        const poleZ = 36
+        const poleH = 32
+
+        poleXPositions.forEach((px) => {
+          const poleGrp = new THREE.Group()
+          poleGrp.position.set(px, -1.2, poleZ)
+
+          // Pole shaft (tapers slightly)
+          const pole = new THREE.Mesh(
+            new THREE.CylinderGeometry(0.22, 0.38, poleH, 8),
+            materials.utilityPole,
+          )
+          pole.position.y = poleH / 2
+          pole.castShadow = true
+          poleGrp.add(pole)
+
+          // Crossarm
+          const crossarm = new THREE.Mesh(
+            new THREE.BoxGeometry(11, 0.55, 0.55),
+            materials.utilityPole,
+          )
+          crossarm.position.y = poleH - 2.5
+          crossarm.castShadow = true
+          poleGrp.add(crossarm)
+
+          // Insulators (small ceramic caps at ends of crossarm)
+          const insMat = new THREE.MeshStandardMaterial({ color: 0xc0a060, roughness: 0.6, metalness: 0.05 })
+          const insGeom = new THREE.CylinderGeometry(0.22, 0.22, 0.5, 6)
+          const insL = new THREE.Mesh(insGeom, insMat)
+          insL.position.set(-5, poleH - 2.0, 0); poleGrp.add(insL)
+          const insR = new THREE.Mesh(insGeom, insMat)
+          insR.position.set(5, poleH - 2.0, 0); poleGrp.add(insR)
+
+          envGroup.add(poleGrp)
         })
 
-        // Left Neighbor House
-        const leftHouse = new THREE.Group()
-        leftHouse.position.set(-65, -1.2, 5)
-        const lhBody = new THREE.Mesh(new THREE.BoxGeometry(26, 16, 34), houseBodyMat)
-        lhBody.position.y = 8
-        lhBody.castShadow = true
-        leftHouse.add(lhBody)
-        const lhRoof = new THREE.Mesh(new THREE.ConeGeometry(19, 10, 4), houseRoofMat)
-        lhRoof.position.y = 21
-        lhRoof.rotation.y = Math.PI / 4
-        lhRoof.castShadow = true
-        leftHouse.add(lhRoof)
-        envGroup.add(leftHouse)
+        // Catenary power lines between poles (QuadraticBezierCurve3 sagging middle)
+        for (let pi = 0; pi < poleXPositions.length - 1; pi++) {
+          const x0 = poleXPositions[pi]
+          const x1 = poleXPositions[pi + 1]
+          const lineY = -1.2 + poleH - 2.2
+          const sagY = lineY - 1.8 // sag in middle
 
-        // Right Neighbor House
-        const rightHouse = new THREE.Group()
-        rightHouse.position.set(65, -1.2, 5)
-        const rhBody = new THREE.Mesh(new THREE.BoxGeometry(26, 16, 34), houseBodyMat)
-        rhBody.position.y = 8
-        rhBody.castShadow = true
-        rightHouse.add(rhBody)
-        const rhRoof = new THREE.Mesh(new THREE.ConeGeometry(19, 10, 4), houseRoofMat)
-        rhRoof.position.y = 21
-        rhRoof.rotation.y = Math.PI / 4
-        rhRoof.castShadow = true
-        rightHouse.add(rhRoof)
-        envGroup.add(rightHouse)
+          // Top wire
+          const lineCurve = new THREE.QuadraticBezierCurve3(
+            new THREE.Vector3(x0 - 5, lineY, poleZ),
+            new THREE.Vector3((x0 + x1) / 2, sagY, poleZ),
+            new THREE.Vector3(x1 + 5, lineY, poleZ),
+          )
+          const linePts = lineCurve.getPoints(24)
+          const lineGeom = new THREE.BufferGeometry().setFromPoints(linePts)
+          const lineMesh = new THREE.Line(lineGeom, materials.powerLine)
+          envGroup.add(lineMesh)
 
-        // 4. Suburban Green Trees (Suburban deciduous foliage in background & borders)
+          // Bottom wire (slightly lower)
+          const lineCurve2 = new THREE.QuadraticBezierCurve3(
+            new THREE.Vector3(x0 - 5, lineY - 2.5, poleZ),
+            new THREE.Vector3((x0 + x1) / 2, sagY - 2.5, poleZ),
+            new THREE.Vector3(x1 + 5, lineY - 2.5, poleZ),
+          )
+          const linePts2 = lineCurve2.getPoints(24)
+          const lineGeom2 = new THREE.BufferGeometry().setFromPoints(linePts2)
+          const lineMesh2 = new THREE.Line(lineGeom2, materials.powerLine)
+          envGroup.add(lineMesh2)
+        }
+
+        // ── Dumpster on Driveway ───────────────────────────────────────────────
+        const dumpster = new THREE.Group()
+        dumpster.position.set(18, -1.2, 14)
+
+        // Main body
+        const dumpBody = new THREE.Mesh(new THREE.BoxGeometry(11, 5.5, 6), materials.dumpsterGreen)
+        dumpBody.position.y = 3.2
+        dumpBody.castShadow = true; dumpster.add(dumpBody)
+
+        // Lid (two panels)
+        const lidMat = new THREE.MeshStandardMaterial({ color: 0x1f5221, roughness: 0.6, metalness: 0.22 })
+        const lid1 = new THREE.Mesh(new THREE.BoxGeometry(5.3, 0.2, 5.8), lidMat)
+        lid1.position.set(-2.7, 6.1, 0)
+        lid1.rotation.z = -0.25 // left lid slightly open
+        dumpster.add(lid1)
+        const lid2 = new THREE.Mesh(new THREE.BoxGeometry(5.3, 0.2, 5.8), lidMat)
+        lid2.position.set(2.7, 6.1, 0)
+        lid2.rotation.z = 0.15
+        dumpster.add(lid2)
+
+        // Wheels / runners
+        const runnerMat = new THREE.MeshStandardMaterial({ color: 0x111111, roughness: 0.92, metalness: 0.08 })
+        const runner = new THREE.Mesh(new THREE.BoxGeometry(11.4, 0.6, 0.6), runnerMat)
+        runner.position.set(0, 0.4, 3.2); dumpster.add(runner)
+        const runner2 = runner.clone(); runner2.position.set(0, 0.4, -3.2); dumpster.add(runner2)
+
+        envGroup.add(dumpster)
+
+        // ── Trees (Improved placement along street + perimeter) ───────────────
         const trunkMat = new THREE.MeshStandardMaterial({ color: 0x4a3728, roughness: 0.9 })
-        const leafMat1 = new THREE.MeshStandardMaterial({ color: 0x2d6a4f, roughness: 0.85 })
-        const leafMat2 = new THREE.MeshStandardMaterial({ color: 0x40916c, roughness: 0.85 })
-        const leafMat3 = new THREE.MeshStandardMaterial({ color: 0x1b4332, roughness: 0.85 })
-        const treeMats = [leafMat1, leafMat2, leafMat3]
-
-        const treeCoords = [
-          [-48, -25], [-50, -10], [-52, 10], [-46, 25],
-          [48, -25], [50, -10], [52, 10], [46, 25],
-          [-28, -55], [0, -58], [28, -55],
+        const leafMats = [
+          new THREE.MeshStandardMaterial({ color: 0x2d6a4f, roughness: 0.85 }),
+          new THREE.MeshStandardMaterial({ color: 0x40916c, roughness: 0.85 }),
+          new THREE.MeshStandardMaterial({ color: 0x1b4332, roughness: 0.85 }),
+          new THREE.MeshStandardMaterial({ color: 0x52b788, roughness: 0.85 }),
         ]
 
-        treeCoords.forEach(([tx, tz], tidx) => {
+        const treeData = [
+          // Backyard perimeter trees
+          { x: -48, z: -28, s: 1.0 }, { x: -50, z: -10, s: 0.85 }, { x: -52, z: 12, s: 0.95 },
+          { x: 48, z: -28, s: 1.0 }, { x: 50, z: -10, s: 0.9 }, { x: 52, z: 12, s: 0.85 },
+          { x: -28, z: -54, s: 1.1 }, { x: 0, z: -58, s: 1.0 }, { x: 28, z: -54, s: 0.95 },
+          // Street-side trees (along median, between curb and sidewalk)
+          { x: -65, z: 32, s: 1.2 }, { x: -35, z: 32, s: 1.0 }, { x: -5, z: 32, s: 1.1 },
+          { x: 38, z: 32, s: 1.0 }, { x: 68, z: 32, s: 1.15 },
+          // Neighbour house yard trees
+          { x: -88, z: -15, s: 1.3 }, { x: 88, z: -12, s: 1.2 },
+        ]
+
+        treeData.forEach(({ x, z, s }, tidx) => {
           const treeGrp = new THREE.Group()
-          treeGrp.position.set(tx, -1.2, tz)
+          treeGrp.position.set(x, -1.2, z)
 
-          const trunkH = 8 + (tidx % 3) * 2
-          const trunk = new THREE.Mesh(new THREE.CylinderGeometry(0.5, 0.7, trunkH, 8), trunkMat)
+          const trunkH = (8 + (tidx % 3) * 2.5) * s
+          const trunk = new THREE.Mesh(new THREE.CylinderGeometry(0.4 * s, 0.6 * s, trunkH, 8), trunkMat)
           trunk.position.y = trunkH / 2
-          trunk.castShadow = true
-          treeGrp.add(trunk)
+          trunk.castShadow = true; treeGrp.add(trunk)
 
-          const foliageR = 5 + (tidx % 2) * 1.5
+          const foliageR = (4.5 + (tidx % 3) * 1.8) * s
           const foliage = new THREE.Mesh(
             new THREE.DodecahedronGeometry(foliageR, 1),
-            treeMats[tidx % treeMats.length],
+            leafMats[tidx % leafMats.length],
           )
-          foliage.position.y = trunkH + foliageR * 0.7
-          foliage.castShadow = true
-          treeGrp.add(foliage)
+          foliage.position.y = trunkH + foliageR * 0.68
+          foliage.castShadow = true; treeGrp.add(foliage)
+
+          // Secondary canopy blob for depth
+          if (s > 0.9) {
+            const foliage2 = new THREE.Mesh(
+              new THREE.DodecahedronGeometry(foliageR * 0.65, 1),
+              leafMats[(tidx + 1) % leafMats.length],
+            )
+            foliage2.position.set(foliageR * 0.4, trunkH + foliageR * 0.45, foliageR * 0.25)
+            foliage2.castShadow = true; treeGrp.add(foliage2)
+          }
 
           envGroup.add(treeGrp)
         })
+
       } else {
         sceneRef.current.background = new THREE.Color(0x090e17)
         sceneRef.current.fog = null

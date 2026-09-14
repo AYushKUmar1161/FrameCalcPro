@@ -654,3 +654,283 @@ export function getPlywoodSheathingTexture(): THREE.CanvasTexture {
   return texture
 }
 
+// ─── New: Street & Neighbourhood Textures ────────────────────────────────────
+
+interface NeighbourhoodTextureCache {
+  asphalt?: THREE.CanvasTexture
+  sidewalk?: THREE.CanvasTexture
+  cloudSky?: THREE.CanvasTexture
+  gravel?: THREE.CanvasTexture
+}
+const neighbourhoodCache: NeighbourhoodTextureCache = {}
+
+/**
+ * Dark asphalt road with faint centre-line lane markings and tyre-worn edges
+ */
+export function getAsphaltTexture(): THREE.CanvasTexture {
+  if (neighbourhoodCache.asphalt) return neighbourhoodCache.asphalt
+
+  const canvas = document.createElement('canvas')
+  canvas.width = 512
+  canvas.height = 512
+  const ctx = canvas.getContext('2d')!
+
+  // Base dark asphalt
+  const base = ctx.createLinearGradient(0, 0, 0, 512)
+  base.addColorStop(0, '#1e1e1e')
+  base.addColorStop(0.5, '#252525')
+  base.addColorStop(1, '#1a1a1a')
+  ctx.fillStyle = base
+  ctx.fillRect(0, 0, 512, 512)
+
+  // Aggregate texture - scattered lighter pebble flecks
+  for (let i = 0; i < 1400; i++) {
+    const px = Math.random() * 512
+    const py = Math.random() * 512
+    const pr = 0.8 + Math.random() * 2.5
+    const brightness = 55 + Math.floor(Math.random() * 35)
+    ctx.fillStyle = `rgb(${brightness},${brightness},${brightness})`
+    ctx.beginPath()
+    ctx.arc(px, py, pr, 0, Math.PI * 2)
+    ctx.fill()
+  }
+
+  // Wear marks / oil stains
+  for (let i = 0; i < 6; i++) {
+    const sx = 60 + Math.random() * 400
+    const sy = 60 + Math.random() * 400
+    const stain = ctx.createRadialGradient(sx, sy, 2, sx, sy, 30 + Math.random() * 30)
+    stain.addColorStop(0, 'rgba(10,10,10,0.35)')
+    stain.addColorStop(1, 'rgba(10,10,10,0)')
+    ctx.fillStyle = stain
+    ctx.fillRect(sx - 60, sy - 60, 120, 120)
+  }
+
+  // Yellow centre dashed line (runs horizontally through middle of texture)
+  ctx.strokeStyle = '#f5d020'
+  ctx.lineWidth = 5
+  ctx.setLineDash([48, 36])
+  ctx.beginPath()
+  ctx.moveTo(0, 256)
+  ctx.lineTo(512, 256)
+  ctx.stroke()
+  ctx.setLineDash([])
+
+  // White edge lines near top and bottom
+  ctx.strokeStyle = 'rgba(240,240,240,0.55)'
+  ctx.lineWidth = 3
+  ctx.beginPath()
+  ctx.moveTo(0, 18); ctx.lineTo(512, 18); ctx.stroke()
+  ctx.beginPath()
+  ctx.moveTo(0, 494); ctx.lineTo(512, 494); ctx.stroke()
+
+  const tex = new THREE.CanvasTexture(canvas)
+  tex.colorSpace = THREE.SRGBColorSpace
+  tex.wrapS = THREE.RepeatWrapping
+  tex.wrapT = THREE.RepeatWrapping
+  tex.repeat.set(8, 2)
+  tex.needsUpdate = true
+  neighbourhoodCache.asphalt = tex
+  return tex
+}
+
+/**
+ * Light grey concrete sidewalk with scored expansion joints every ~5ft
+ */
+export function getSidewalkTexture(): THREE.CanvasTexture {
+  if (neighbourhoodCache.sidewalk) return neighbourhoodCache.sidewalk
+
+  const canvas = document.createElement('canvas')
+  canvas.width = 512
+  canvas.height = 256
+  const ctx = canvas.getContext('2d')!
+
+  // Base concrete tone
+  const base = ctx.createLinearGradient(0, 0, 512, 256)
+  base.addColorStop(0, '#c8c4bc')
+  base.addColorStop(0.5, '#d4d0c8')
+  base.addColorStop(1, '#c0bcb4')
+  ctx.fillStyle = base
+  ctx.fillRect(0, 0, 512, 256)
+
+  // Aggregate speckle
+  for (let i = 0; i < 800; i++) {
+    const px = Math.random() * 512
+    const py = Math.random() * 256
+    const pr = 0.5 + Math.random() * 1.5
+    const b = 165 + Math.floor(Math.random() * 30)
+    ctx.fillStyle = `rgb(${b},${b-4},${b-8})`
+    ctx.beginPath()
+    ctx.arc(px, py, pr, 0, Math.PI * 2)
+    ctx.fill()
+  }
+
+  // Expansion joint lines (scored grooves)
+  ctx.strokeStyle = 'rgba(100,95,88,0.7)'
+  ctx.lineWidth = 2
+  // Vertical joints every ~85px
+  for (let x = 85; x < 512; x += 85) {
+    ctx.beginPath()
+    ctx.moveTo(x, 0)
+    ctx.lineTo(x, 256)
+    ctx.stroke()
+  }
+  // Single horizontal joint in the middle
+  ctx.beginPath()
+  ctx.moveTo(0, 128)
+  ctx.lineTo(512, 128)
+  ctx.stroke()
+
+  // Slight edge shadow
+  const edgeShadow = ctx.createLinearGradient(0, 0, 0, 10)
+  edgeShadow.addColorStop(0, 'rgba(0,0,0,0.15)')
+  edgeShadow.addColorStop(1, 'rgba(0,0,0,0)')
+  ctx.fillStyle = edgeShadow
+  ctx.fillRect(0, 0, 512, 10)
+
+  const tex = new THREE.CanvasTexture(canvas)
+  tex.colorSpace = THREE.SRGBColorSpace
+  tex.wrapS = THREE.RepeatWrapping
+  tex.wrapT = THREE.RepeatWrapping
+  tex.repeat.set(12, 2)
+  tex.needsUpdate = true
+  neighbourhoodCache.sidewalk = tex
+  return tex
+}
+
+/**
+ * Procedural cloud sky texture - blue gradient with fluffy cumulus clouds
+ */
+export function getCloudSkyTexture(): THREE.CanvasTexture {
+  if (neighbourhoodCache.cloudSky) return neighbourhoodCache.cloudSky
+
+  const canvas = document.createElement('canvas')
+  canvas.width = 1024
+  canvas.height = 512
+  const ctx = canvas.getContext('2d')!
+
+  // Sky gradient - deep blue top to pale horizon
+  const skyGrad = ctx.createLinearGradient(0, 0, 0, 512)
+  skyGrad.addColorStop(0, '#2a6db5')
+  skyGrad.addColorStop(0.3, '#5a9fd4')
+  skyGrad.addColorStop(0.7, '#87ceeb')
+  skyGrad.addColorStop(0.9, '#c8e8f8')
+  skyGrad.addColorStop(1, '#ddeeff')
+  ctx.fillStyle = skyGrad
+  ctx.fillRect(0, 0, 1024, 512)
+
+  // Cloud drawing helper
+  const drawCloud = (cx: number, cy: number, scale: number, alpha: number) => {
+    ctx.save()
+    ctx.globalAlpha = alpha
+    ctx.translate(cx, cy)
+
+    const blobs = [
+      [0, 0, 70 * scale],
+      [-55 * scale, 15 * scale, 50 * scale],
+      [55 * scale, 15 * scale, 55 * scale],
+      [-25 * scale, -20 * scale, 55 * scale],
+      [30 * scale, -18 * scale, 60 * scale],
+      [-85 * scale, 25 * scale, 40 * scale],
+      [85 * scale, 22 * scale, 42 * scale],
+    ]
+
+    blobs.forEach(([bx, by, r]) => {
+      const g = ctx.createRadialGradient(bx, by - r * 0.2, r * 0.1, bx, by, r)
+      g.addColorStop(0, '#ffffff')
+      g.addColorStop(0.5, '#f0f4f8')
+      g.addColorStop(0.85, '#dce8f0')
+      g.addColorStop(1, 'rgba(200,220,240,0)')
+      ctx.fillStyle = g
+      ctx.beginPath()
+      ctx.arc(bx, by, r, 0, Math.PI * 2)
+      ctx.fill()
+    })
+
+    // Shadow underside
+    const shadow = ctx.createLinearGradient(0, 20 * scale, 0, 60 * scale)
+    shadow.addColorStop(0, 'rgba(180,200,215,0.3)')
+    shadow.addColorStop(1, 'rgba(180,200,215,0)')
+    ctx.fillStyle = shadow
+    ctx.fillRect(-100 * scale, 20 * scale, 200 * scale, 60 * scale)
+
+    ctx.restore()
+  }
+
+  // Place clouds at varying positions and sizes
+  drawCloud(150, 120, 0.9, 0.92)
+  drawCloud(480, 80, 1.1, 0.88)
+  drawCloud(780, 140, 0.75, 0.85)
+  drawCloud(950, 90, 0.6, 0.82)
+  drawCloud(60, 200, 0.55, 0.75)
+  drawCloud(330, 185, 0.65, 0.78)
+  drawCloud(620, 170, 0.8, 0.80)
+  drawCloud(880, 210, 0.5, 0.70)
+
+  const tex = new THREE.CanvasTexture(canvas)
+  tex.colorSpace = THREE.SRGBColorSpace
+  tex.wrapS = THREE.ClampToEdgeWrapping
+  tex.wrapT = THREE.ClampToEdgeWrapping
+  tex.needsUpdate = true
+  neighbourhoodCache.cloudSky = tex
+  return tex
+}
+
+/**
+ * Construction site gravel / compacted dirt pad around house foundation
+ */
+export function getGravelTexture(): THREE.CanvasTexture {
+  if (neighbourhoodCache.gravel) return neighbourhoodCache.gravel
+
+  const canvas = document.createElement('canvas')
+  canvas.width = 256
+  canvas.height = 256
+  const ctx = canvas.getContext('2d')!
+
+  // Base dirty grey-brown
+  ctx.fillStyle = '#7a6e5e'
+  ctx.fillRect(0, 0, 256, 256)
+
+  // Gravel stones
+  for (let i = 0; i < 320; i++) {
+    const gx = Math.random() * 256
+    const gy = Math.random() * 256
+    const gw = 3 + Math.random() * 8
+    const gh = 2 + Math.random() * 5
+    const angle = Math.random() * Math.PI
+    const tone = 100 + Math.floor(Math.random() * 60)
+    ctx.save()
+    ctx.translate(gx, gy)
+    ctx.rotate(angle)
+    ctx.fillStyle = `rgb(${tone},${tone - 5},${tone - 12})`
+    ctx.beginPath()
+    ctx.ellipse(0, 0, gw, gh, 0, 0, Math.PI * 2)
+    ctx.fill()
+    // Highlight on stone
+    ctx.fillStyle = `rgba(255,255,255,0.15)`
+    ctx.beginPath()
+    ctx.ellipse(-1, -1, gw * 0.5, gh * 0.4, 0, 0, Math.PI * 2)
+    ctx.fill()
+    ctx.restore()
+  }
+
+  // Mud / dirt patches
+  for (let i = 0; i < 8; i++) {
+    const mx = Math.random() * 256
+    const my = Math.random() * 256
+    const mud = ctx.createRadialGradient(mx, my, 0, mx, my, 18 + Math.random() * 20)
+    mud.addColorStop(0, 'rgba(60,45,30,0.5)')
+    mud.addColorStop(1, 'rgba(60,45,30,0)')
+    ctx.fillStyle = mud
+    ctx.fillRect(mx - 40, my - 40, 80, 80)
+  }
+
+  const tex = new THREE.CanvasTexture(canvas)
+  tex.colorSpace = THREE.SRGBColorSpace
+  tex.wrapS = THREE.RepeatWrapping
+  tex.wrapT = THREE.RepeatWrapping
+  tex.repeat.set(6, 6)
+  tex.needsUpdate = true
+  neighbourhoodCache.gravel = tex
+  return tex
+}

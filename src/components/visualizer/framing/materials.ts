@@ -12,6 +12,10 @@ import {
   getGrassTexture,
   getCedarFenceTexture,
   getPlywoodSheathingTexture,
+  getAsphaltTexture,
+  getSidewalkTexture,
+  getCloudSkyTexture,
+  getGravelTexture,
 } from './textures/proceduralTextures'
 
 export interface FramingMaterialSet {
@@ -51,6 +55,24 @@ export interface FramingMaterialSet {
   windowGlass: THREE.MeshStandardMaterial
   doorPanel: THREE.MeshStandardMaterial
   concreteLanding: THREE.MeshStandardMaterial
+  // Neighbourhood Street materials
+  asphalt: THREE.MeshStandardMaterial
+  concreteSidewalk: THREE.MeshStandardMaterial
+  truckPaint: THREE.MeshStandardMaterial
+  truckGlass: THREE.MeshStandardMaterial
+  truckTire: THREE.MeshStandardMaterial
+  truckChrome: THREE.MeshStandardMaterial
+  dumpsterGreen: THREE.MeshStandardMaterial
+  utilityPole: THREE.MeshStandardMaterial
+  powerLine: THREE.MeshStandardMaterial
+  gravelPad: THREE.MeshStandardMaterial
+  cloudSkyMat: THREE.MeshStandardMaterial
+  neighbourWall1: THREE.MeshStandardMaterial
+  neighbourWall2: THREE.MeshStandardMaterial
+  neighbourWall3: THREE.MeshStandardMaterial
+  neighbourRoof1: THREE.MeshStandardMaterial
+  neighbourRoof2: THREE.MeshStandardMaterial
+  neighbourRoof3: THREE.MeshStandardMaterial
   dispose: () => void
 }
 
@@ -75,6 +97,10 @@ export function createFramingMaterials(
   const grassTexture = isRealistic ? getGrassTexture() : undefined
   const fenceTexture = isRealistic ? getCedarFenceTexture() : undefined
   const plywoodTexture = isRealistic ? getPlywoodSheathingTexture() : undefined
+  const asphaltTexture = isRealistic ? getAsphaltTexture() : undefined
+  const sidewalkTexture = isRealistic ? getSidewalkTexture() : undefined
+  const cloudSkyTexture = isRealistic ? getCloudSkyTexture() : undefined
+  const gravelTexture = isRealistic ? getGravelTexture() : undefined
 
   // 1. Common Wall Studs (Warm Douglas Fir / SPF Kiln-Dried with authentic wood grain)
   const stud = new THREE.MeshStandardMaterial({
@@ -427,43 +453,112 @@ export function createFramingMaterials(
     metalness: 0.04,
   })
 
+  // ── Neighbourhood Street Materials ──────────────────────────────────────────
+
+  // 37. Dark Asphalt Road Surface
+  const asphalt = new THREE.MeshStandardMaterial({
+    map: asphaltTexture,
+    color: isRealistic ? 0xffffff : 0x374151,
+    roughness: 0.96,
+    metalness: 0.01,
+  })
+
+  // 38. Concrete Sidewalk
+  const concreteSidewalk = new THREE.MeshStandardMaterial({
+    map: sidewalkTexture,
+    color: isRealistic ? 0xffffff : 0xa8a8a8,
+    roughness: 0.92,
+    metalness: 0.02,
+  })
+
+  // 39. Pickup Truck — Metallic Steel Blue Paint
+  const truckPaint = new THREE.MeshStandardMaterial({
+    color: 0x4a6fa5,
+    roughness: 0.22,
+    metalness: 0.72,
+  })
+
+  // 40. Truck Windshield / Window Glass (Dark Tint)
+  const truckGlass = new THREE.MeshStandardMaterial({
+    color: 0x1a2635,
+    roughness: 0.05,
+    metalness: 0.9,
+    transparent: true,
+    opacity: 0.75,
+  })
+
+  // 41. Truck Tyres — Matte Rubber Black
+  const truckTire = new THREE.MeshStandardMaterial({
+    color: 0x1a1a1a,
+    roughness: 0.95,
+    metalness: 0.02,
+  })
+
+  // 42. Truck Bumper / Chrome Trim
+  const truckChrome = new THREE.MeshStandardMaterial({
+    color: 0xd0d8e0,
+    roughness: 0.12,
+    metalness: 0.92,
+  })
+
+  // 43. Roll-Off Dumpster — Construction Green
+  const dumpsterGreen = new THREE.MeshStandardMaterial({
+    color: 0x2e6b30,
+    roughness: 0.55,
+    metalness: 0.28,
+  })
+
+  // 44. Utility Pole (weathered brown timber)
+  const utilityPole = new THREE.MeshStandardMaterial({
+    color: 0x5c3d20,
+    roughness: 0.92,
+    metalness: 0.01,
+  })
+
+  // 45. Power Line Wire (dark grey)
+  const powerLine = new THREE.MeshStandardMaterial({
+    color: 0x222222,
+    roughness: 0.85,
+    metalness: 0.12,
+  })
+
+  // 46. Construction Gravel Pad around foundation
+  const gravelPad = new THREE.MeshStandardMaterial({
+    map: gravelTexture,
+    color: isRealistic ? 0xffffff : 0x8a7a68,
+    roughness: 0.97,
+    metalness: 0.01,
+  })
+
+  // 47. Cloud Sky Billboard Plane
+  const cloudSkyMat = new THREE.MeshStandardMaterial({
+    map: cloudSkyTexture,
+    color: 0xffffff,
+    roughness: 1.0,
+    metalness: 0.0,
+    side: THREE.FrontSide,
+    fog: false,
+  })
+
+  // 48–53. Neighbour House Wall & Roof Materials
+  const neighbourWall1 = new THREE.MeshStandardMaterial({ color: 0xe8dcc8, roughness: 0.78, metalness: 0.02 }) // craftsman warm beige
+  const neighbourWall2 = new THREE.MeshStandardMaterial({ color: 0xb8c4cc, roughness: 0.75, metalness: 0.03 }) // colonial slate grey
+  const neighbourWall3 = new THREE.MeshStandardMaterial({ color: 0x9a6b4b, roughness: 0.80, metalness: 0.02 }) // ranch brick-red
+  const neighbourRoof1 = new THREE.MeshStandardMaterial({ color: 0x3d2b1f, roughness: 0.88, metalness: 0.02 }) // craftsman dark brown hip
+  const neighbourRoof2 = new THREE.MeshStandardMaterial({ color: 0x2e3a40, roughness: 0.85, metalness: 0.03 }) // colonial charcoal gable
+  const neighbourRoof3 = new THREE.MeshStandardMaterial({ color: 0x2d3035, roughness: 0.90, metalness: 0.02 }) // ranch dark flat-gable
+
   const allMaterials = [
-    stud,
-    plate,
-    header,
-    jack,
-    king,
-    cripple,
-    sill,
-    roof,
-    ridge,
-    floor,
-    subfloor,
-    foundation,
-    sheathing,
-    highlight,
-    hover,
-    dimmed,
-    diagridSteel,
-    glowingFloorEdge,
-    glowingCyan,
-    centralCore,
-    glassCurtain,
-    holographicCyan,
-    wrbWrap,
-    insulationBatt,
-    drywall,
-    lapSiding,
-    galvanizedHardware,
-    anchorBolt,
-    concreteSlab,
-    grassLawn,
-    cedarFence,
-    plywoodSheathing,
-    windowFrame,
-    windowGlass,
-    doorPanel,
-    concreteLanding,
+    stud, plate, header, jack, king, cripple, sill, roof, ridge,
+    floor, subfloor, foundation, sheathing, highlight, hover, dimmed,
+    diagridSteel, glowingFloorEdge, glowingCyan, centralCore, glassCurtain, holographicCyan,
+    wrbWrap, insulationBatt, drywall, lapSiding, galvanizedHardware, anchorBolt,
+    concreteSlab, grassLawn, cedarFence, plywoodSheathing,
+    windowFrame, windowGlass, doorPanel, concreteLanding,
+    asphalt, concreteSidewalk, truckPaint, truckGlass, truckTire, truckChrome,
+    dumpsterGreen, utilityPole, powerLine, gravelPad, cloudSkyMat,
+    neighbourWall1, neighbourWall2, neighbourWall3,
+    neighbourRoof1, neighbourRoof2, neighbourRoof3,
   ]
 
   const dispose = () => {
@@ -507,6 +602,23 @@ export function createFramingMaterials(
     windowGlass,
     doorPanel,
     concreteLanding,
+    asphalt,
+    concreteSidewalk,
+    truckPaint,
+    truckGlass,
+    truckTire,
+    truckChrome,
+    dumpsterGreen,
+    utilityPole,
+    powerLine,
+    gravelPad,
+    cloudSkyMat,
+    neighbourWall1,
+    neighbourWall2,
+    neighbourWall3,
+    neighbourRoof1,
+    neighbourRoof2,
+    neighbourRoof3,
     dispose,
   }
 }

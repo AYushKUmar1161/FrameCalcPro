@@ -86,6 +86,12 @@ export function ProjectsPage() {
         </div>
 
         <div className="flex items-center gap-3">
+          <Link to="/ai-framing">
+            <Button variant="primary" size="md" className="bg-gradient-to-r from-brand-600 to-amber-600 border-none shadow-md shadow-brand-500/20 text-white font-bold">
+              <Sparkles className="h-4 w-4 animate-pulse" />
+              <span>AI Image → 3D</span>
+            </Button>
+          </Link>
           <Link to="/calculator">
             <Button variant="secondary" size="md">
               <Calculator className="h-4 w-4 text-brand-600" />

@@ -22,6 +22,8 @@ export interface MemberData {
   takeoffKey?: string
   notes?: string
   mesh?: THREE.Mesh
+  source?: string
+  confidence?: number
 }
 
 export class MemberRegistry {
@@ -118,7 +120,12 @@ export class MemberRegistry {
       spacing: member.spacing || '—',
       material: member.material,
       dimensions: dimsStr,
+      wallId: member.wallId,
+      floor: member.floor,
+      nominalSize: member.nominalSize,
       notes: member.notes,
+      source: member.source,
+      confidence: member.confidence,
     }
   }
 

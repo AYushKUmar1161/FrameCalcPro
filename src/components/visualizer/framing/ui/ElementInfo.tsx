@@ -149,6 +149,63 @@ export function ElementInfo({
           </span>
         </div>
 
+        {element.wallId && (
+          <div className="flex items-center justify-between py-1.5 border-b border-zinc-800/60 text-xs">
+            <span className="text-zinc-400 font-medium">WALL</span>
+            <span className="font-mono font-bold text-zinc-100">{element.wallId}</span>
+          </div>
+        )}
+
+        {element.source && (
+          <div className="flex items-center justify-between py-1.5 border-b border-zinc-800/60 text-xs">
+            <span className="text-zinc-400 font-medium">SOURCE</span>
+            <span
+              className={`font-mono text-[10px] font-bold px-2 py-0.5 rounded ${
+                element.source === 'IMAGE-VISIBLE'
+                  ? 'bg-emerald-500/20 text-emerald-400 border border-emerald-500/30'
+                  : element.source === 'AI-INFERRED'
+                  ? 'bg-sky-500/20 text-sky-400 border border-sky-500/30'
+                  : element.source === 'USER-CONFIRMED'
+                  ? 'bg-purple-500/20 text-purple-400 border border-purple-500/30'
+                  : 'bg-amber-500/20 text-amber-400 border border-amber-500/30'
+              }`}
+            >
+              {element.source}
+            </span>
+          </div>
+        )}
+
+        {element.confidence !== undefined && (
+          <div className="flex items-center justify-between py-1.5 border-b border-zinc-800/60 text-xs">
+            <span className="text-zinc-400 font-medium">CONFIDENCE</span>
+            <div className="flex items-center gap-2">
+              <div className="w-14 h-1.5 rounded-full bg-zinc-800 overflow-hidden">
+                <div
+                  className={`h-full rounded-full ${
+                    element.confidence >= 0.8
+                      ? 'bg-emerald-500'
+                      : element.confidence >= 0.5
+                      ? 'bg-amber-500'
+                      : 'bg-rose-500'
+                  }`}
+                  style={{ width: `${Math.round(element.confidence * 100)}%` }}
+                />
+              </div>
+              <span
+                className={`font-mono text-xs font-bold ${
+                  element.confidence >= 0.8
+                    ? 'text-emerald-400'
+                    : element.confidence >= 0.5
+                    ? 'text-amber-400'
+                    : 'text-rose-400'
+                }`}
+              >
+                {Math.round(element.confidence * 100)}%
+              </span>
+            </div>
+          </div>
+        )}
+
         <div className="flex items-center justify-between py-1.5 text-xs">
           <span className="text-zinc-400 font-medium">QUANTITY</span>
           <span className="font-mono font-bold text-brand-400 text-sm">

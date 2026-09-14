@@ -38,6 +38,7 @@ import { Dropdown } from '../components/ui/Dropdown'
 const primaryNavItems = [
   { to: '/dashboard', label: 'Dashboard', icon: LayoutDashboard },
   { to: '/calculator', label: 'Step-by-Step Calculator', icon: Calculator },
+  { to: '/ai-framing', label: 'AI Image → 3D Framing', icon: Sparkles, badge: 'AI' },
   { to: '/projects', label: 'Project Library', icon: FolderKanban },
 ]
 
@@ -101,22 +102,29 @@ export function AppLayout() {
           <p className="px-3 text-[10px] font-bold uppercase tracking-wider text-zinc-600">
             Main Menu
           </p>
-          {primaryNavItems.map(({ to, label, icon: Icon }) => (
+          {primaryNavItems.map(({ to, label, icon: Icon, badge }: any) => (
             <NavLink
               key={to}
               to={to}
               onClick={() => isMobile && setSidebarOpen(false)}
               className={({ isActive }) =>
                 cn(
-                  'flex items-center gap-3 rounded-xl px-3 py-2.5 text-xs font-semibold transition-all duration-150',
+                  'flex items-center justify-between rounded-xl px-3 py-2.5 text-xs font-semibold transition-all duration-150',
                   isActive
                     ? 'bg-brand-50/80 text-brand-950 border-l-3 border-brand-500 shadow-2xs font-bold'
                     : 'text-zinc-600 hover:bg-zinc-50 hover:text-zinc-950',
                 )
               }
             >
-              <Icon className="h-4 w-4 shrink-0 text-current" />
-              <span>{label}</span>
+              <div className="flex items-center gap-3">
+                <Icon className="h-4 w-4 shrink-0 text-current" />
+                <span>{label}</span>
+              </div>
+              {badge && (
+                <span className="rounded-full bg-brand-100 text-brand-700 px-1.5 py-0.2 text-[9px] font-mono font-bold tracking-wider">
+                  {badge}
+                </span>
+              )}
             </NavLink>
           ))}
         </div>
@@ -145,6 +153,7 @@ export function AppLayout() {
             <div className="space-y-0.5 pt-1">
               {[
                 { to: `/projects/${activeProject.id}`, label: 'Overview', icon: LayoutDashboard, end: true },
+                { to: `/projects/${activeProject.id}/ai-framing`, label: 'AI Image → 3D', icon: Sparkles },
                 { to: `/projects/${activeProject.id}/walls`, label: 'Walls Schedule', icon: ClipboardList },
                 { to: `/projects/${activeProject.id}/openings`, label: 'Doors & Windows', icon: Package },
                 { to: `/projects/${activeProject.id}/materials`, label: 'Material Prices', icon: Settings },
@@ -321,6 +330,15 @@ export function AppLayout() {
 
           {/* Quick Header Actions */}
           <div className="flex items-center gap-2">
+            <Link
+              to={activeProject ? `/projects/${activeProject.id}/ai-framing` : '/ai-framing'}
+              className="hidden sm:inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-gradient-to-r from-amber-500/10 via-brand-500/10 to-amber-500/10 border border-brand-500/30 text-brand-700 hover:text-brand-900 hover:border-brand-500 text-xs font-bold transition-all shadow-2xs cursor-pointer"
+              title="Generate 3D framing model from photo or elevation"
+            >
+              <Sparkles className="h-3.5 w-3.5 text-brand-500 animate-pulse" />
+              <span>AI Image → 3D Framing</span>
+            </Link>
+
             {activeProject && (
               <>
                 <Tooltip content="Save current project" position="bottom">

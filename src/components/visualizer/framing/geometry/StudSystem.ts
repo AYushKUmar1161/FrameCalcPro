@@ -78,6 +78,8 @@ export class StudSystem {
 
       const studMesh = new THREE.Mesh(studGeom, materials.stud.clone())
       studMesh.position.set(sx, studY, 0)
+      studMesh.castShadow = true
+      studMesh.receiveShadow = true
 
       const studDesc = isCorner
         ? `${wallThickness.toUpperCase()} California Corner Stud`

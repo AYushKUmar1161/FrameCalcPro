@@ -260,7 +260,10 @@ export function FramingScene({
     clearGroup(wallsGroupRef.current)
     clearGroup(roofGroupRef.current)
 
-    const materials = materialsRef.current
+    const materials = createFramingMaterials(viewMode, isWireframe)
+    materialsRef.current = materials
+    selectionManager.setMaterials(materials)
+
     const cutawayActive = isCutaway || viewMode === 'cutaway'
 
     const registerMesh = (mesh: THREE.Mesh, info: FramingElementInfo) => {
@@ -466,6 +469,7 @@ export function FramingScene({
     activeWallDirection,
     holographicGhost,
     frameToFinish,
+    isWireframe,
   ])
 
   // ─── Initialize Three.js WebGL Engine ───
@@ -504,7 +508,7 @@ export function FramingScene({
     renderer.setSize(width, height)
     renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2))
     renderer.shadowMap.enabled = true
-    renderer.shadowMap.type = THREE.PCFShadowMap
+    renderer.shadowMap.type = THREE.PCFSoftShadowMap
     rendererRef.current = renderer
 
     // 4. Orbit Controls (touch-friendly with damping)
@@ -517,22 +521,29 @@ export function FramingScene({
     controlsRef.current = controls
 
     // 5. Architectural Lighting (Key sun + Front fill + Cool sky fill + Ground bounce + subtle coral accent)
-    const ambientLight = new THREE.AmbientLight(0xffffff, 1.45)
+    const ambientLight = new THREE.AmbientLight(0xffffff, 1.7)
     scene.add(ambientLight)
 
-    const keySun = new THREE.DirectionalLight(0xfffaea, 2.2)
-    keySun.position.set(35, 55, 45)
+    const keySun = new THREE.DirectionalLight(0xfffaea, 2.4)
+    keySun.position.set(38, 60, 48)
     keySun.castShadow = true
     keySun.shadow.mapSize.width = 2048
     keySun.shadow.mapSize.height = 2048
-    keySun.shadow.bias = -0.0002
+    keySun.shadow.camera.near = 1
+    keySun.shadow.camera.far = 180
+    keySun.shadow.camera.left = -50
+    keySun.shadow.camera.right = 50
+    keySun.shadow.camera.top = 50
+    keySun.shadow.camera.bottom = -50
+    keySun.shadow.radius = 2.0
+    keySun.shadow.bias = -0.0003
     scene.add(keySun)
 
-    const frontFill = new THREE.DirectionalLight(0xffeedd, 1.2)
+    const frontFill = new THREE.DirectionalLight(0xffeedd, 1.4)
     frontFill.position.set(0, 25, 45)
     scene.add(frontFill)
 
-    const skyFill = new THREE.DirectionalLight(0x93c5fd, 0.85)
+    const skyFill = new THREE.DirectionalLight(0xdbeafe, 1.1)
     skyFill.position.set(-35, 30, -30)
     scene.add(skyFill)
 

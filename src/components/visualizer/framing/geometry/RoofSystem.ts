@@ -128,6 +128,47 @@ export class RoofSystem {
           notes: 'Ties opposite rafter feet together along top plate line to resist horizontal outward thrust.',
         })
         roofGroup.add(collarTie)
+
+        // ─── 3B. GALVANIZED STEEL HARDWARE & CONNECTORS ───
+        // A. Simpson Strong-Tie H2.5A Hurricane Ties (Rafter-to-Plate)
+        const tiePlateGeom = new THREE.BoxGeometry(1.5 / 12, 3.5 / 12, 0.06 / 12)
+        const frontTie = new THREE.Mesh(tiePlateGeom, materials.galvanizedHardware)
+        frontTie.position.set(rx, wallHeight + 1.5 / 12, width / 2 + 0.05)
+        registerMesh(frontTie, {
+          id: `roof-hurricane-tie-front-${r}`,
+          name: 'Simpson Strong-Tie H2.5A Hurricane Rafter Tie',
+          category: 'roof',
+          length: '4.5 inches',
+          quantity: numRafters * 2,
+          spacing: 'At Every Rafter Bearing',
+          material: '18-Gauge G90 Galvanized Stamped Steel',
+          dimensions: '1.5" × 4.5" Tie Clip',
+          notes: 'Resists hurricane wind uplift (585 lbs allowable uplift capacity).',
+        })
+        roofGroup.add(frontTie)
+
+        if (!isSectionCut) {
+          const backTie = new THREE.Mesh(tiePlateGeom, materials.galvanizedHardware)
+          backTie.position.set(rx, wallHeight + 1.5 / 12, -width / 2 - 0.05)
+          roofGroup.add(backTie)
+        }
+
+        // B. Galvanized Gang-Nail Truss Mending Plates (at Ridge Apex)
+        const mendingPlateGeom = new THREE.BoxGeometry(0.04 / 12, 7 / 12, 9 / 12)
+        const ridgePlate1 = new THREE.Mesh(mendingPlateGeom, materials.galvanizedHardware)
+        ridgePlate1.position.set(rx + studW / 2 + 0.02, wallHeight + ridgeHeight - 0.25, 0)
+        registerMesh(ridgePlate1, {
+          id: `truss-mending-plate-apex-${r}`,
+          name: 'MiTek 20-Gauge Galvanized Truss Mending Plate',
+          category: 'roof',
+          length: '7" × 9"',
+          quantity: numRafters * 4,
+          spacing: 'Truss Node Intersections',
+          material: '20-Gauge ASTM A653 Structural Galvanized Steel',
+          dimensions: '7" × 9" Punched-Teeth Plate',
+          notes: 'Hydraulically embedded punched-metal connector carrying chord tension & compression.',
+        })
+        roofGroup.add(ridgePlate1)
       }
     }
 

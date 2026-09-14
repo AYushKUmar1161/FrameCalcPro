@@ -110,6 +110,31 @@ export class FloorSystem {
       })
       fGroup.add(fRight)
 
+      // 1E. Concrete Basement / Crawlspace Poured Slab
+      const slabGeom = new THREE.BoxGeometry(length, 0.35, width)
+      const slabMesh = new THREE.Mesh(slabGeom, materials.concreteSlab.clone())
+      slabMesh.position.set(0, -joistDepth - foundationDepth + 0.175, 0)
+      slabMesh.receiveShadow = true
+      registerMesh(slabMesh, {
+        id: 'foundation-slab',
+        name: '4" Reinforced Concrete Slab',
+        category: 'foundation',
+        length: `${Math.round(length)}' × ${Math.round(width)}'`,
+        quantity: 1,
+        spacing: 'Monolithic Pour with 6x6 W1.4/W1.4 Welded Wire Mesh',
+        material: '3,500 PSI Finished Concrete with Vapor Retarder',
+        dimensions: `${Math.round(length)}' × ${Math.round(width)}' × 4" thick`,
+        notes: 'Poured over 15-mil Stego Wrap Class A vapor retarder and 4" washed crushed stone base.',
+      })
+      fGroup.add(slabMesh)
+
+      // 1F. Architectural Jobsite Foundation Apron Pad (receives soft framing contact shadows)
+      const padGeom = new THREE.BoxGeometry(length + 16, 0.25, width + 16)
+      const padMesh = new THREE.Mesh(padGeom, materials.concreteSlab.clone())
+      padMesh.position.set(0, -joistDepth - foundationDepth - 0.125, 0)
+      padMesh.receiveShadow = true
+      fGroup.add(padMesh)
+
       floorGroup.add(fGroup)
     }
 

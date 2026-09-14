@@ -115,6 +115,7 @@ export function ProjectOverviewPage() {
           <h2 className="mb-4 text-base font-semibold text-zinc-900">Wall Framing Preview</h2>
           <WallVisualizer
             wall={activeProject.walls[0]}
+            walls={activeProject.walls}
             openings={activeProject.openings}
             studSpacingIn={studSpacingIn}
             measurementSystem={activeProject.measurementSystem}

@@ -6,6 +6,8 @@ import {
   type FramingElementInfo,
   type LayerVisibility,
   type ViewerTool,
+  type ViewMode,
+  type FramingCategory,
   DEFAULT_LAYERS,
   FramingScene,
   LayerControls,
@@ -15,7 +17,7 @@ import {
   StudSpacingControl,
 } from './framing'
 
-export type { FramingElementInfo, LayerVisibility }
+export type { FramingElementInfo, LayerVisibility, ViewMode }
 export { DEFAULT_LAYERS }
 
 export interface Framing3DViewerProps {
@@ -42,6 +44,13 @@ export interface Framing3DViewerProps {
   showToolbar?: boolean
   showSidePanels?: boolean
   autoRotateDefault?: boolean
+  initialViewMode?: ViewMode
+  initialNumStories?: 1 | 2
+  isExploded?: boolean
+  onToggleExploded?: () => void
+  activeWallDirection?: 'all' | 'north' | 'east' | 'south' | 'west'
+  holographicGhost?: boolean
+  frameToFinish?: boolean
 }
 
 export function Framing3DViewer({
@@ -68,25 +77,58 @@ export function Framing3DViewer({
   showToolbar = true,
   showSidePanels = true,
   autoRotateDefault = false,
+  initialViewMode = 'realistic',
+  initialNumStories = 2,
+  isExploded: externalIsExploded,
+  onToggleExploded,
+  activeWallDirection = 'all',
+  holographicGhost = false,
+  frameToFinish = false,
 }: Framing3DViewerProps) {
-  // Internal state when not externally managed
+  // View mode and stories state
+  const [viewMode, setViewMode] = useState<ViewMode>(initialViewMode)
+  const [numStories, setNumStories] = useState<1 | 2>(initialNumStories)
+  const [constructionProgress, setConstructionProgress] = useState<number>(100)
+
+  // Internal layer and isolation state
   const [internalLayers, setInternalLayers] = useState<LayerVisibility>(externalLayers || DEFAULT_LAYERS)
-  const [internalSelectedElement, setInternalSelectedElement] = useState<FramingElementInfo | null>({
-    id: 'demo-stud',
-    name: `${wallThickness === '2x6' ? '2 × 6' : '2 × 4'} Common Stud`,
-    category: 'stud',
-    length: `${wall ? wall.height : 9} ft`,
-    quantity: estimate?.studBreakdown?.totalRequired ?? (studSpacingIn === 12 ? 196 : studSpacingIn === 16 ? 148 : 102),
-    spacing: `${studSpacingIn} in O.C.`,
-    material: 'SPF #2 Kiln-Dried',
-    dimensions: `${wallThickness === '2x6' ? '1.5" × 5.5"' : '1.5" × 3.5"'} × ${wall ? wall.height : 9}'`,
-    notes: 'Primary structural vertical framing member spaced on-center for load-bearing walls.',
-  })
+  const [isIsolated, setIsIsolated] = useState<boolean>(false)
+  const [preIsolationLayers, setPreIsolationLayers] = useState<LayerVisibility | null>(null)
+
+  const isTower = propertyType === 'tower' || propertyType === 'diagrid-tower' || propertyType === 'skyscraper'
+
+  const [internalSelectedElement, setInternalSelectedElement] = useState<FramingElementInfo | null>(
+    isTower
+      ? {
+          id: 'diagrid-member-0-0',
+          name: 'W14×90 Perimeter Diagrid Member',
+          category: 'stud',
+          length: '14.8 ft',
+          quantity: 192,
+          spacing: '60° Diamond Node',
+          material: 'Grade A992 High-Strength Steel / Glulam',
+          dimensions: '14" × 14" Box Section',
+          notes: 'Triangulated perimeter diagrid member carrying primary gravity and lateral seismic wind loads.',
+        }
+      : {
+          id: 'demo-stud',
+          name: `${wallThickness === '2x6' ? '2 × 6' : '2 × 4'} Common Stud`,
+          category: 'stud',
+          length: `${wall ? wall.height : 9} ft`,
+          quantity: estimate?.studBreakdown?.totalRequired ?? (studSpacingIn === 12 ? 196 : studSpacingIn === 16 ? 148 : 102),
+          spacing: `${studSpacingIn} in O.C.`,
+          material: 'SPF #2 Kiln-Dried',
+          dimensions: `${wallThickness === '2x6' ? '1.5" × 5.5"' : '1.5" × 3.5"'} × ${wall ? wall.height : 9}'`,
+          notes: 'Primary structural vertical framing member spaced on-center for load-bearing walls.',
+        },
+  )
 
   const [hoveredName, setHoveredName] = useState<string | null>(null)
   const [isWireframe, setIsWireframe] = useState(false)
   const [isSectionCut, setIsSectionCut] = useState(false)
-  const [isExploded, setIsExploded] = useState(false)
+  const [internalIsExploded, setInternalIsExploded] = useState(false)
+  const isExploded = externalIsExploded !== undefined ? externalIsExploded : internalIsExploded
+  const toggleExploded = onToggleExploded || (() => setInternalIsExploded((v) => !v))
   const [showDimensions, setShowDimensions] = useState(false)
   const [autoRotate, setAutoRotate] = useState(autoRotateDefault)
   const [controlMode, setControlMode] = useState<ViewerTool>('orbit')
@@ -108,6 +150,139 @@ export function Framing3DViewer({
     [activeLayers, onLayersChange],
   )
 
+  const handleShowAll = useCallback(() => {
+    const allOn: LayerVisibility = {
+      walls: true,
+      studs: true,
+      plates: true,
+      headers: true,
+      openings: true,
+      floor: true,
+      subfloor: true,
+      roof: true,
+      sheathing: true,
+      foundation: true,
+    }
+    setIsIsolated(false)
+    setPreIsolationLayers(null)
+    if (onLayersChange) {
+      onLayersChange(allOn)
+    } else {
+      setInternalLayers(allOn)
+    }
+  }, [onLayersChange])
+
+  const handleHideAll = useCallback(() => {
+    const allOff: LayerVisibility = {
+      walls: false,
+      studs: false,
+      plates: false,
+      headers: false,
+      openings: false,
+      floor: false,
+      subfloor: false,
+      roof: false,
+      sheathing: false,
+      foundation: false,
+    }
+    setIsIsolated(false)
+    setPreIsolationLayers(null)
+    if (onLayersChange) {
+      onLayersChange(allOff)
+    } else {
+      setInternalLayers(allOff)
+    }
+  }, [onLayersChange])
+
+  const handleIsolateSelected = useCallback(() => {
+    if (isIsolated) {
+      if (preIsolationLayers) {
+        if (onLayersChange) onLayersChange(preIsolationLayers)
+        else setInternalLayers(preIsolationLayers)
+      }
+      setIsIsolated(false)
+      setPreIsolationLayers(null)
+    } else {
+      if (!internalSelectedElement) return
+      setPreIsolationLayers(activeLayers)
+      setIsIsolated(true)
+      const cat = internalSelectedElement.category
+      const targetKey: keyof LayerVisibility =
+        cat === 'king' || cat === 'jack' || cat === 'cripple'
+          ? 'openings'
+          : cat === 'stud'
+          ? 'studs'
+          : cat === 'plate' || cat === 'sill'
+          ? 'plates'
+          : cat === 'header'
+          ? 'headers'
+          : cat === 'sheathing'
+          ? 'sheathing'
+          : cat === 'floor'
+          ? 'floor'
+          : cat === 'subfloor'
+          ? 'subfloor'
+          : cat === 'roof'
+          ? 'roof'
+          : cat === 'foundation'
+          ? 'foundation'
+          : 'walls'
+
+      const isolated: LayerVisibility = {
+        walls: targetKey === 'walls',
+        studs: targetKey === 'studs',
+        plates: targetKey === 'plates',
+        headers: targetKey === 'headers',
+        openings: targetKey === 'openings',
+        floor: targetKey === 'floor',
+        subfloor: targetKey === 'subfloor',
+        roof: targetKey === 'roof',
+        sheathing: targetKey === 'sheathing',
+        foundation: targetKey === 'foundation',
+      }
+      if (onLayersChange) onLayersChange(isolated)
+      else setInternalLayers(isolated)
+    }
+  }, [isIsolated, preIsolationLayers, internalSelectedElement, activeLayers, onLayersChange])
+
+  const handleTakeoffSelectCategory = useCallback(
+    (category: FramingCategory) => {
+      const catName = category.charAt(0).toUpperCase() + category.slice(1)
+      let defaultQty = 1
+      if (category === 'stud') defaultQty = estimate?.studBreakdown?.totalRequired ?? 148
+      else if (category === 'plate') defaultQty = Math.round(estimate?.plateBreakdown?.totalLinearFeet ?? 280)
+      else if (category === 'header') defaultQty = estimate?.headerBreakdowns?.reduce((s, h) => s + h.quantity, 0) ?? 8
+      else if (category === 'sheathing') defaultQty = estimate?.sheathing?.sheetsRequired ?? 38
+      else if (category === 'floor') defaultQty = 32
+
+      setInternalSelectedElement({
+        id: `takeoff-${category}`,
+        name: `${catName} Framing Category`,
+        category,
+        length: category === 'plate' ? `${defaultQty} LF` : '—',
+        quantity: defaultQty,
+        spacing: category === 'stud' ? `${studSpacingIn}" O.C.` : category === 'floor' ? '16" O.C.' : '—',
+        material: category === 'sheathing' ? '7/16" OSB Plywood' : 'SPF #2 Kiln-Dried',
+        dimensions: category === 'stud' ? (wallThickness === '2x6' ? '2×6 SPF' : '2×4 SPF') : 'Standard Spec',
+        notes: `Selected via Live Material Takeoff summary for synchronized 3D inspection.`,
+      })
+    },
+    [estimate, studSpacingIn, wallThickness],
+  )
+
+  const handleViewModeChange = useCallback((mode: ViewMode) => {
+    setViewMode(mode)
+    setIsWireframe(mode === 'wireframe')
+  }, [])
+
+  const handleToggleWireframe = useCallback(() => {
+    setIsWireframe((prev) => {
+      const next = !prev
+      setViewMode(next ? 'wireframe' : 'realistic')
+      return next
+    })
+  }, [])
+
   const handleSelect = useCallback(
     (info: FramingElementInfo | null) => {
       setInternalSelectedElement(info)
@@ -117,7 +292,6 @@ export function Framing3DViewer({
   )
 
   const handleZoom = useCallback((direction: 'in' | 'out') => {
-    // Zoom control action handled by OrbitControls dolly
     const factor = direction === 'in' ? 0.8 : 1.25
     const camera = (window as any).__framingCamera
     const controls = (window as any).__framingControls
@@ -184,6 +358,11 @@ export function Framing3DViewer({
             <LayerControls
               layers={activeLayers}
               onToggleLayer={handleToggleLayer}
+              onShowAll={handleShowAll}
+              onHideAll={handleHideAll}
+              selectedCategory={internalSelectedElement?.category}
+              onIsolateSelected={handleIsolateSelected}
+              isIsolated={isIsolated}
             />
 
             {/* Lumber Specs Quick Config */}
@@ -249,8 +428,28 @@ export function Framing3DViewer({
             </div>
           )}
 
-          {/* Active Mode Badges (Section, Exploded, Measure) */}
+          {/* Active Mode Badges (Section, Exploded, Measure, Cutaway, Tech) */}
           <div className="absolute top-3 left-3 z-20 pointer-events-none flex flex-wrap items-center gap-1.5">
+            {viewMode === 'cutaway' && (
+              <span className="font-mono text-[10px] text-orange-300 bg-orange-950/80 border border-orange-800/80 px-2 py-0.5 rounded-md backdrop-blur-md">
+                CUTAWAY DOLLHOUSE
+              </span>
+            )}
+            {viewMode === 'technical' && (
+              <span className="font-mono text-[10px] text-blue-300 bg-blue-950/80 border border-blue-800/80 px-2 py-0.5 rounded-md backdrop-blur-md">
+                TECHNICAL SCHEMATIC
+              </span>
+            )}
+            {numStories === 2 && (
+              <span className="hidden sm:inline-flex font-mono text-[10px] text-emerald-300 bg-emerald-950/80 border border-emerald-800/80 px-2 py-0.5 rounded-md backdrop-blur-md">
+                2-STORY ENVELOPE
+              </span>
+            )}
+            {constructionProgress < 100 && (
+              <span className="font-mono text-[10px] text-purple-300 bg-purple-950/80 border border-purple-800/80 px-2 py-0.5 rounded-md backdrop-blur-md">
+                PROGRESS: {constructionProgress}%
+              </span>
+            )}
             {isSectionCut && (
               <span className="font-mono text-[10px] text-amber-300 bg-amber-950/80 border border-amber-800/80 px-2 py-0.5 rounded-md backdrop-blur-md">
                 SECTION CUT ACTIVE
@@ -283,12 +482,19 @@ export function Framing3DViewer({
             layers={activeLayers}
             selectedElementId={internalSelectedElement?.id ?? selectedElementId}
             estimate={estimate}
-            isWireframe={isWireframe}
+            viewMode={viewMode}
+            numStories={numStories}
+            constructionProgress={constructionProgress}
+            isWireframe={isWireframe || viewMode === 'wireframe'}
             isSectionCut={isSectionCut}
+            isCutaway={viewMode === 'cutaway'}
             isExploded={isExploded}
             showDimensions={showDimensions}
             autoRotate={autoRotate}
             controlMode={controlMode}
+            activeWallDirection={activeWallDirection}
+            holographicGhost={holographicGhost}
+            frameToFinish={frameToFinish}
             onSelectElement={handleSelect}
             onHoverElement={setHoveredName}
             className="w-full h-full"
@@ -308,9 +514,15 @@ export function Framing3DViewer({
                 isSectionCut={isSectionCut}
                 onToggleSectionCut={() => setIsSectionCut(!isSectionCut)}
                 isExploded={isExploded}
-                onToggleExploded={() => setIsExploded(!isExploded)}
-                isWireframe={isWireframe}
-                onToggleWireframe={() => setIsWireframe(!isWireframe)}
+                onToggleExploded={toggleExploded}
+                isWireframe={isWireframe || viewMode === 'wireframe'}
+                onToggleWireframe={handleToggleWireframe}
+                viewMode={viewMode}
+                onViewModeChange={handleViewModeChange}
+                numStories={numStories}
+                onStoriesChange={setNumStories}
+                constructionProgress={constructionProgress}
+                onProgressChange={setConstructionProgress}
                 onResetCamera={handleResetCamera}
                 isFullStructure={isFullStructure}
               />
@@ -384,6 +596,11 @@ export function Framing3DViewer({
                 <LayerControls
                   layers={activeLayers}
                   onToggleLayer={handleToggleLayer}
+                  onShowAll={handleShowAll}
+                  onHideAll={handleHideAll}
+                  selectedCategory={internalSelectedElement?.category}
+                  onIsolateSelected={handleIsolateSelected}
+                  isIsolated={isIsolated}
                 />
               )}
 
@@ -398,6 +615,8 @@ export function Framing3DViewer({
                 <TakeoffSummary
                   estimate={estimate}
                   wallThickness={wallThickness}
+                  selectedCategory={internalSelectedElement?.category}
+                  onSelectCategory={handleTakeoffSelectCategory}
                 />
               )}
             </div>
@@ -417,6 +636,8 @@ export function Framing3DViewer({
             <TakeoffSummary
               estimate={estimate}
               wallThickness={wallThickness}
+              selectedCategory={internalSelectedElement?.category}
+              onSelectCategory={handleTakeoffSelectCategory}
             />
           </aside>
         )}

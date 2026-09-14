@@ -9,6 +9,7 @@ export interface RoofSystemOptions {
   studW: number
   layers: LayerVisibility
   isSectionCut?: boolean
+  isCutaway?: boolean
   registerMesh: (mesh: THREE.Mesh, info: FramingElementInfo) => void
 }
 
@@ -18,13 +19,23 @@ export class RoofSystem {
     materials: FramingMaterialSet,
     options: RoofSystemOptions,
   ): void {
-    const { length, width, wallHeight, studW, layers, isSectionCut = false, registerMesh } = options
+    const {
+      length,
+      width,
+      wallHeight,
+      studW,
+      layers,
+      isSectionCut = false,
+      isCutaway = false,
+      registerMesh,
+    } = options
 
     if (!layers.roof) return
 
     const roofGroup = new THREE.Group()
+    roofGroup.name = 'roof-framing-assembly'
 
-    // 6:12 pitch = 6 inches rise per 12 inches run = 0.5
+    // 6:12 pitch = 6" rise per 12" run = 0.5 slope
     const pitch = 6 / 12
     const overhang = 1.0 // 12" eave overhang
     const halfSpan = width / 2 + overhang
@@ -35,12 +46,13 @@ export class RoofSystem {
     const rafterAngle = Math.atan(ridgeHeight / halfSpan)
     const rafterDepth = 5.5 / 12 // 2x6 rafter depth
 
-    // ─── 1. CONTINUOUS RIDGE BEAM ───
+    // ─── 1. CONTINUOUS RIDGE BEAM (2×10) ───
     const ridgeLength = length + overhang * 2
     const ridgeDepth = 9.25 / 12 // 2x10 ridge beam
     const ridgeGeom = new THREE.BoxGeometry(ridgeLength, ridgeDepth, studW * 1.5)
     const ridgeMesh = new THREE.Mesh(ridgeGeom, materials.ridge.clone())
     ridgeMesh.position.set(0, wallHeight + ridgeHeight, 0)
+    ridgeMesh.castShadow = true
 
     registerMesh(ridgeMesh, {
       id: 'roof-ridge-board',
@@ -66,6 +78,7 @@ export class RoofSystem {
         const frontRafter = new THREE.Mesh(rafterGeom, materials.roof.clone())
         frontRafter.position.set(rx, wallHeight + ridgeHeight / 2, halfSpan / 2)
         frontRafter.rotation.x = rafterAngle
+        frontRafter.castShadow = true
         registerMesh(frontRafter, {
           id: `roof-rafter-front-${r}`,
           name: '2×6 Roof Rafter (Front Slope)',
@@ -79,11 +92,12 @@ export class RoofSystem {
         })
         roofGroup.add(frontRafter)
 
-        // Back Slope Rafter (omitted in section cut to reveal interior framing)
+        // Back Slope Rafter
         if (!isSectionCut) {
           const backRafter = new THREE.Mesh(rafterGeom, materials.roof.clone())
           backRafter.position.set(rx, wallHeight + ridgeHeight / 2, -halfSpan / 2)
           backRafter.rotation.x = -rafterAngle
+          backRafter.castShadow = true
           registerMesh(backRafter, {
             id: `roof-rafter-back-${r}`,
             name: '2×6 Roof Rafter (Back Slope)',
@@ -98,9 +112,10 @@ export class RoofSystem {
           roofGroup.add(backRafter)
         }
 
-        // ─── 3. CEILING JOIST / COLLAR TIE ───
+        // ─── 3. CEILING JOIST / BOTTOM CHORD TIE ───
         const collarTie = new THREE.Mesh(tieGeom, materials.stud.clone())
         collarTie.position.set(rx, wallHeight, 0)
+        collarTie.castShadow = true
         registerMesh(collarTie, {
           id: `roof-collar-tie-${r}`,
           name: '2×6 Ceiling Joist / Bottom Chord Tie',
@@ -116,6 +131,91 @@ export class RoofSystem {
       }
     }
 
+    // ─── 4. GABLE END WALL FRAMING (Vertical Gable Studs) ───
+    if (layers.studs && layers.walls) {
+      const gablePositionsX = [-length / 2, length / 2]
+      const gableStudSpacingFt = 16 / 12
+      const numGableStuds = Math.floor((width / 2) / gableStudSpacingFt)
+
+      gablePositionsX.forEach((gx, gIdx) => {
+        // Build studs in gable triangle from center outward
+        for (let s = 1; s <= numGableStuds; s++) {
+          const zOffset = s * gableStudSpacingFt
+          const distFromPeak = zOffset / (width / 2)
+          const studH = Math.max(0.5, (1 - distFromPeak) * ridgeHeight)
+
+          if (studH > 0.6) {
+            const gStudGeom = new THREE.BoxGeometry(studW, studH, studW * 2.5)
+
+            // Front half of gable
+            const stud1 = new THREE.Mesh(gStudGeom, materials.stud.clone())
+            stud1.position.set(gx, wallHeight + studH / 2, zOffset)
+            registerMesh(stud1, {
+              id: `gable-stud-${gIdx}-f-${s}`,
+              name: '2×4 Gable End Wall Stud',
+              category: 'stud',
+              length: `${studH.toFixed(1)} ft`,
+              quantity: numGableStuds * 4,
+              spacing: '16" O.C. Gable Profile',
+              material: 'SPF #2',
+              dimensions: `1.5" × 3.5" × ${studH.toFixed(1)}'`,
+              notes: 'Beveled top cut bearing against rafter underside.',
+            })
+            roofGroup.add(stud1)
+
+            // Back half of gable
+            const stud2 = new THREE.Mesh(gStudGeom, materials.stud.clone())
+            stud2.position.set(gx, wallHeight + studH / 2, -zOffset)
+            roofGroup.add(stud2)
+          }
+        }
+      })
+    }
+
+    // ─── 5. ROOF SHEATHING (OSB Panels) ───
+    if (layers.sheathing) {
+      const sheathingThick = 0.44 / 12
+      const roofSheathGeom = new THREE.BoxGeometry(ridgeLength, sheathingThick, rafterLength)
+
+      // Back Slope Sheathing (Always drawn when sheathing is on)
+      if (!isSectionCut) {
+        const backSheath = new THREE.Mesh(roofSheathGeom, materials.sheathing.clone())
+        backSheath.position.set(0, wallHeight + ridgeHeight / 2 + sheathingThick, -halfSpan / 2)
+        backSheath.rotation.x = -rafterAngle
+        registerMesh(backSheath, {
+          id: 'roof-sheathing-back',
+          name: '7/16" OSB Roof Deck Sheathing (Back Slope)',
+          category: 'sheathing',
+          length: `${Math.round(ridgeLength)}' × ${rafterLength.toFixed(1)}'`,
+          quantity: Math.ceil((ridgeLength * rafterLength * 2) / 32),
+          spacing: 'H-Clips at Mid-Span',
+          material: 'APA Rated 7/16" OSB Roof Panels',
+          dimensions: '48" × 96" × 7/16" Panels',
+          notes: 'Fastened with 8d common nails at 6" edge, 12" field with ply-clips at unsupported edges.',
+        })
+        roofGroup.add(backSheath)
+      }
+
+      // Front Slope Sheathing: In cutaway mode, front slope is omitted/opened to reveal rafters!
+      if (!isCutaway) {
+        const frontSheath = new THREE.Mesh(roofSheathGeom, materials.sheathing.clone())
+        frontSheath.position.set(0, wallHeight + ridgeHeight / 2 + sheathingThick, halfSpan / 2)
+        frontSheath.rotation.x = rafterAngle
+        registerMesh(frontSheath, {
+          id: 'roof-sheathing-front',
+          name: '7/16" OSB Roof Deck Sheathing (Front Slope)',
+          category: 'sheathing',
+          length: `${Math.round(ridgeLength)}' × ${rafterLength.toFixed(1)}'`,
+          quantity: Math.ceil((ridgeLength * rafterLength * 2) / 32),
+          spacing: 'H-Clips at Mid-Span',
+          material: 'APA Rated 7/16" OSB Roof Panels',
+          dimensions: '48" × 96" × 7/16" Panels',
+        })
+        roofGroup.add(frontSheath)
+      }
+    }
+
     group.add(roofGroup)
   }
 }
+

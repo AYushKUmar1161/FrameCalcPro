@@ -99,6 +99,7 @@ export function WallsPage() {
           </div>
           <WallVisualizer
             wall={selectedWall}
+            walls={activeProject.walls}
             openings={activeProject.openings}
             studSpacingIn={studSpacingIn}
             measurementSystem={activeProject.measurementSystem}

@@ -11,6 +11,8 @@ export type FramingCategory =
   | 'sill'
   | 'roof'
   | 'floor'
+  | 'subfloor'
+  | 'foundation'
   | 'sheathing'
 
 export interface FramingElementInfo {
@@ -32,8 +34,10 @@ export interface LayerVisibility {
   headers: boolean
   openings: boolean
   floor: boolean
+  subfloor: boolean
   roof: boolean
   sheathing: boolean
+  foundation?: boolean
 }
 
 export const DEFAULT_LAYERS: LayerVisibility = {
@@ -43,19 +47,25 @@ export const DEFAULT_LAYERS: LayerVisibility = {
   headers: true,
   openings: true,
   floor: true,
+  subfloor: false,
   roof: true,
   sheathing: false,
+  foundation: true,
 }
 
 export type ViewerTool = 'orbit' | 'pan'
+export type ViewMode = 'realistic' | 'technical' | 'wireframe' | 'cutaway'
 
 export interface FramingSceneState {
+  viewMode: ViewMode
   isWireframe: boolean
   isSectionCut: boolean
   isExploded: boolean
   showDimensions: boolean
   autoRotate: boolean
   controlMode: ViewerTool
+  constructionProgress: number
+  numStories: 1 | 2
 }
 
 export interface FramingModelConfig {
@@ -72,4 +82,8 @@ export interface FramingModelConfig {
   layers?: LayerVisibility
   selectedElementId?: string | null
   estimate?: FramingEstimate | null
+  numStories?: 1 | 2
+  viewMode?: ViewMode
+  constructionProgress?: number
 }
+

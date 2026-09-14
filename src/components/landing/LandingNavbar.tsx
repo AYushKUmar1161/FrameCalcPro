@@ -135,16 +135,16 @@ export function LandingNavbar() {
                 variant="ghost"
                 size="md"
                 onClick={() => openAuthModal('signin')}
-                className="text-zinc-300 hover:text-white hover:bg-white/5 font-medium text-sm px-3.5 cursor-pointer"
+                className="!text-white hover:!text-white !bg-white/5 hover:!bg-white/10 !border !border-white/25 hover:!border-white/50 font-medium text-sm px-3.5 rounded-lg transition-colors cursor-pointer"
               >
                 Sign In
               </Button>
 
               <Button
-                variant="outline"
+                variant="secondary"
                 size="md"
                 onClick={() => openAuthModal('signup')}
-                className="border-zinc-700 hover:border-zinc-500 text-zinc-200 hover:text-white hover:bg-white/5 font-medium text-sm px-3.5 cursor-pointer"
+                className="!bg-white !text-zinc-900 hover:!bg-zinc-100 font-semibold text-sm px-4 !border !border-white/20 shadow-xs hover:shadow-sm rounded-lg transition-all duration-150 cursor-pointer active:scale-[0.98]"
               >
                 Create Account
               </Button>
@@ -279,22 +279,22 @@ export function LandingNavbar() {
             <div className="mt-4 pt-4 border-t border-zinc-800 flex flex-col gap-2.5">
               <div className="grid grid-cols-2 gap-2">
                 <Button
-                  variant="outline"
+                  variant="ghost"
                   onClick={() => {
                     setMobileMenuOpen(false)
                     openAuthModal('signin')
                   }}
-                  className="w-full text-zinc-200 bg-zinc-900 border-zinc-700 justify-center text-xs font-medium cursor-pointer"
+                  className="w-full !text-white !bg-white/5 hover:!bg-white/10 !border !border-white/25 hover:!border-white/50 justify-center text-xs font-medium cursor-pointer rounded-lg py-2 transition-colors"
                 >
                   Sign In
                 </Button>
                 <Button
-                  variant="outline"
+                  variant="secondary"
                   onClick={() => {
                     setMobileMenuOpen(false)
                     openAuthModal('signup')
                   }}
-                  className="w-full text-white bg-zinc-800 border-zinc-600 justify-center text-xs font-semibold cursor-pointer"
+                  className="w-full !text-zinc-900 !bg-white hover:!bg-zinc-100 !border !border-white/20 shadow-xs justify-center text-xs font-semibold cursor-pointer rounded-lg py-2 transition-colors active:scale-[0.98]"
                 >
                   Create Account
                 </Button>

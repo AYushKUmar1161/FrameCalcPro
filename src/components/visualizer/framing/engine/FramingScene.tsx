@@ -3,12 +3,17 @@ import * as THREE from 'three'
 import { OrbitControls } from 'three/examples/jsm/controls/OrbitControls.js'
 import type { Opening, Wall, MeasurementSystem } from '../../../../types/project'
 import type { FramingEstimate } from '../../../../types/estimate'
-import type { FramingElementInfo, LayerVisibility, ViewerTool } from '../types'
+import type { FramingElementInfo, LayerVisibility, ViewerTool, ViewMode } from '../types'
 import { createFramingMaterials, type FramingMaterialSet } from '../materials'
 import { SelectionManager } from './SelectionManager'
 import { WallSystem } from '../geometry/WallSystem'
 import { FloorSystem } from '../geometry/FloorSystem'
 import { RoofSystem } from '../geometry/RoofSystem'
+import { DiagridTowerSystem } from '../geometry/DiagridTowerSystem'
+import { CommercialFrameSystem } from '../geometry/CommercialFrameSystem'
+import { AFrameCabinSystem } from '../geometry/AFrameCabinSystem'
+import { IndustrialWarehouseSystem } from '../geometry/IndustrialWarehouseSystem'
+import { ObservationTowerSystem } from '../geometry/ObservationTowerSystem'
 
 export interface FramingSceneProps {
   wall?: Wall | null
@@ -24,12 +29,19 @@ export interface FramingSceneProps {
   layers: LayerVisibility
   selectedElementId?: string | null
   estimate?: FramingEstimate | null
+  viewMode?: ViewMode
+  numStories?: 1 | 2
+  constructionProgress?: number
   isWireframe?: boolean
   isSectionCut?: boolean
+  isCutaway?: boolean
   isExploded?: boolean
   showDimensions?: boolean
   autoRotate?: boolean
   controlMode?: ViewerTool
+  activeWallDirection?: 'all' | 'north' | 'east' | 'south' | 'west'
+  holographicGhost?: boolean
+  frameToFinish?: boolean
   onSelectElement?: (info: FramingElementInfo | null) => void
   onHoverElement?: (name: string | null) => void
   className?: string
@@ -42,19 +54,26 @@ export function FramingScene({
   studSpacingIn = 16,
   measurementSystem = 'imperial',
   topPlate = 'double',
-  wallThickness = '2x4',
+  wallThickness = '2x6',
   isFullStructure = true,
   propertyType = 'residential',
   propertyConfig,
   layers,
   selectedElementId = null,
   estimate = null,
+  viewMode = 'realistic',
+  numStories = 2,
+  constructionProgress = 100,
   isWireframe = false,
   isSectionCut = false,
+  isCutaway = false,
   isExploded = false,
   showDimensions = false,
   autoRotate = false,
   controlMode = 'orbit',
+  activeWallDirection = 'all',
+  holographicGhost = false,
+  frameToFinish = false,
   onSelectElement,
   onHoverElement,
   className = '',
@@ -79,28 +98,131 @@ export function FramingScene({
   const explodedProgressRef = useRef(0)
   const targetExplodedRef = useRef(0)
 
-  // Dimensions
-  const wallLengthFt = wall ? wall.length : 28
-  const wallHeightFt = wall ? wall.height : 9
+  // Dimensions and Building Model Classification
+  const isTower = propertyType === 'tower' || propertyType === 'diagrid-tower' || propertyType === 'skyscraper'
+  const isCommercial = propertyType === 'commercial'
+  const isAFrame = propertyType === 'a-frame' || propertyType === 'aframe'
+  const isIndustrial = propertyType === 'industrial' || propertyType === 'warehouse'
+  const isObsTower = propertyType === 'observation-tower' || propertyType === 'helical-tower'
+
+  const wallLengthFt = wall ? wall.length : (walls[0]?.length || 40)
+  const wallHeightFt = wall ? wall.height : (walls[0]?.height || 8)
+  const widthFt = walls[2]?.length ? walls[2].length : Math.min(24, Math.max(16, Math.round(wallLengthFt * 0.6)))
   const studW = 1.5 / 12
 
-  // ─── Camera Auto-Framing ───
+  // Total building height calculation (including foundation, 1 or 2 stories, and roof pitch)
+  const effectiveStories = isFullStructure && propertyType !== 'garage-adu' ? numStories : 1
+  const joistDepth = 9.25 / 12
+  const subfloorThick = 0.75 / 12
+  const story2ElevationY = wallHeightFt + joistDepth + subfloorThick
+  const totalWallH = effectiveStories === 2 ? story2ElevationY + wallHeightFt : wallHeightFt
+  const roofApexH = (widthFt / 2 + 1.0) * (6 / 12)
+  const totalBuildingH = totalWallH + roofApexH
+
+  // ─── Camera Auto-Framing (Architectural 3/4 Perspective fitting full house or towers) ───
   const resetCamera = useCallback(() => {
     if (!cameraRef.current || !controlsRef.current) return
     const camera = cameraRef.current
     const controls = controlsRef.current
 
-    const targetY = isFullStructure ? wallHeightFt * 0.55 : wallHeightFt * 0.45
-    controls.target.set(0, targetY, 0)
+    if (isTower) {
+      const targetCenterY = 24
+      controls.target.set(0, targetCenterY, 0)
+      camera.position.set(42, 36, 48)
+      camera.lookAt(0, targetCenterY, 0)
+      controls.update()
+      return
+    }
 
-    // Calculate distance based on model dimensions
-    const maxDim = Math.max(wallLengthFt, wallHeightFt, isFullStructure ? 24 : 12)
-    const dist = maxDim * (isFullStructure ? 1.45 : 1.3)
+    if (isObsTower) {
+      const targetCenterY = 22
+      controls.target.set(0, targetCenterY, 0)
+      camera.position.set(40, 32, 44)
+      camera.lookAt(0, targetCenterY, 0)
+      controls.update()
+      return
+    }
 
-    camera.position.set(dist * 0.85, dist * 0.65, dist * 0.95)
-    camera.lookAt(0, targetY, 0)
+    if (isCommercial) {
+      const targetCenterY = 10
+      controls.target.set(0, targetCenterY, 0)
+      camera.position.set(38, 28, 44)
+      camera.lookAt(0, targetCenterY, 0)
+      controls.update()
+      return
+    }
+
+    if (isAFrame) {
+      const targetCenterY = 11
+      controls.target.set(0, targetCenterY, 0)
+      camera.position.set(36, 24, 40)
+      camera.lookAt(0, targetCenterY, 0)
+      controls.update()
+      return
+    }
+
+    if (isIndustrial) {
+      const targetCenterY = 9
+      controls.target.set(0, targetCenterY, 0)
+      camera.position.set(44, 26, 46)
+      camera.lookAt(0, targetCenterY, 0)
+      controls.update()
+      return
+    }
+
+    const targetCenterY = isFullStructure ? totalBuildingH * 0.46 : wallHeightFt * 0.5
+    controls.target.set(0, targetCenterY, 0)
+
+    // Calculate optimal framing distance without clipping or extreme zoom
+    const maxDimension = Math.max(wallLengthFt, widthFt, totalBuildingH)
+    const framingDistance = maxDimension * (isFullStructure ? 1.08 : 0.95)
+
+    // Architectural 3/4 elevated perspective
+    camera.position.set(
+      framingDistance * 0.85,
+      targetCenterY + framingDistance * 0.48,
+      framingDistance * 0.92,
+    )
+    camera.lookAt(0, targetCenterY, 0)
     controls.update()
-  }, [wallLengthFt, wallHeightFt, isFullStructure])
+  }, [wallLengthFt, widthFt, totalBuildingH, isFullStructure, wallHeightFt, isTower, isObsTower, isCommercial, isAFrame, isIndustrial])
+
+  // Expose camera and reset function globally for viewer toolbar buttons
+  useEffect(() => {
+    ;(window as any).__framingCamera = cameraRef.current
+    ;(window as any).__framingControls = controlsRef.current
+    ;(window as any).__framingResetCamera = resetCamera
+  }, [resetCamera])
+
+  // Camera glide when activeWallDirection changes (N · E · S · W · 360° Room)
+  useEffect(() => {
+    if (!cameraRef.current || !controlsRef.current) return
+    const camera = cameraRef.current
+    const controls = controlsRef.current
+    const maxDimension = Math.max(wallLengthFt, widthFt, totalBuildingH)
+    const framingDistance = maxDimension * (isFullStructure ? 1.08 : 0.95)
+    const elevY = isFullStructure && effectiveStories === 2 ? totalBuildingH * 0.46 : wallHeightFt * 0.52
+
+    if (activeWallDirection === 'north') {
+      controls.target.set(0, elevY, widthFt / 2)
+      camera.position.set(0, elevY + 1.2, widthFt / 2 + framingDistance * 0.65)
+      controls.update()
+    } else if (activeWallDirection === 'south') {
+      controls.target.set(0, elevY, -widthFt / 2)
+      camera.position.set(0, elevY + 1.2, -widthFt / 2 - framingDistance * 0.65)
+      controls.update()
+    } else if (activeWallDirection === 'east') {
+      controls.target.set(wallLengthFt / 2, elevY, 0)
+      camera.position.set(wallLengthFt / 2 + framingDistance * 0.65, elevY + 1.2, 0)
+      controls.update()
+    } else if (activeWallDirection === 'west') {
+      controls.target.set(-wallLengthFt / 2, elevY, 0)
+      camera.position.set(-wallLengthFt / 2 - framingDistance * 0.65, elevY + 1.2, 0)
+      controls.update()
+    } else if (activeWallDirection === 'all') {
+      resetCamera()
+    }
+  }, [activeWallDirection, wallLengthFt, widthFt, totalBuildingH, wallHeightFt, isFullStructure, effectiveStories, resetCamera])
 
   // Update target exploded factor
   useEffect(() => {
@@ -139,55 +261,179 @@ export function FramingScene({
     clearGroup(roofGroupRef.current)
 
     const materials = materialsRef.current
-    const width = Math.min(24, Math.max(16, Math.round(wallLengthFt * 0.7)))
+    const cutawayActive = isCutaway || viewMode === 'cutaway'
 
     const registerMesh = (mesh: THREE.Mesh, info: FramingElementInfo) => {
       selectionManager.registerMesh(mesh, info)
     }
 
-    // 1. Floor System
-    if (isFullStructure) {
-      FloorSystem.buildFloor(floorGroupRef.current, materials, {
-        length: wallLengthFt,
-        width,
-        studW,
+    // Diagrid Skyscraper Exoskeleton Tower System
+    if (isTower) {
+      DiagridTowerSystem.buildTower(wallsGroupRef.current, materials, {
         layers,
+        viewMode,
+        isWireframe,
+        isSectionCut,
+        isCutaway: cutawayActive,
+        showDimensions,
+        registerMesh,
+      })
+      selectionManager.applySelection(selectedElementId)
+      return
+    }
+
+    // Commercial 4-Story Mass-Timber Frame
+    if (isCommercial) {
+      CommercialFrameSystem.buildFrame(wallsGroupRef.current, materials, {
+        layers,
+        viewMode,
+        isWireframe,
+        isSectionCut,
+        isCutaway: cutawayActive,
+        showDimensions,
+        registerMesh,
+      })
+      selectionManager.applySelection(selectedElementId)
+      return
+    }
+
+    // Modern Luxury A-Frame Cabin
+    if (isAFrame) {
+      AFrameCabinSystem.buildCabin(wallsGroupRef.current, materials, {
+        layers,
+        viewMode,
+        isWireframe,
+        isSectionCut,
+        isCutaway: cutawayActive,
+        showDimensions,
+        registerMesh,
+      })
+      selectionManager.applySelection(selectedElementId)
+      return
+    }
+
+    // Industrial Clear-Span Truss Warehouse
+    if (isIndustrial) {
+      IndustrialWarehouseSystem.buildWarehouse(wallsGroupRef.current, materials, {
+        layers,
+        viewMode,
+        isWireframe,
+        isSectionCut,
+        isCutaway: cutawayActive,
+        showDimensions,
+        registerMesh,
+      })
+      selectionManager.applySelection(selectedElementId)
+      return
+    }
+
+    // Helical Diagrid Observation Tower
+    if (isObsTower) {
+      ObservationTowerSystem.buildTower(wallsGroupRef.current, materials, {
+        layers,
+        viewMode,
+        isWireframe,
+        isSectionCut,
+        isCutaway: cutawayActive,
+        showDimensions,
+        registerMesh,
+      })
+      selectionManager.applySelection(selectedElementId)
+      return
+    }
+
+    // Construction progress visibility filters:
+    // 0% - 20%: Foundation & Mudsill
+    // 21% - 40%: Ground Floor Joists & Subfloor
+    // 41% - 65%: First Floor Walls & Interior Partitions
+    // 66% - 85%: Second Floor Framing & Upper Walls
+    // 86% - 100%: Roof Framing & Sheathing
+    const showFoundation = constructionProgress >= 0
+    const showFloor = constructionProgress >= 20
+    const showFirstWalls = constructionProgress >= 40
+    const showUpperWalls = effectiveStories === 2 && constructionProgress >= 65
+    const showRoof = constructionProgress >= 85
+
+    const resolvedWallDirection = holographicGhost && activeWallDirection === 'all' ? 'north' : activeWallDirection
+    const isGhostActive = holographicGhost
+    const activeWallPrefix =
+      resolvedWallDirection === 'north'
+        ? 'Story1-Front'
+        : resolvedWallDirection === 'south'
+          ? 'Story1-Back'
+          : resolvedWallDirection === 'east'
+            ? 'Story1-Right'
+            : resolvedWallDirection === 'west'
+              ? 'Story1-Left'
+              : undefined
+
+    const ghostMaterials: FramingMaterialSet = isGhostActive
+      ? {
+          ...materials,
+          floor: materials.holographicCyan,
+          subfloor: materials.holographicCyan,
+          foundation: materials.holographicCyan,
+          roof: materials.holographicCyan,
+          ridge: materials.holographicCyan,
+        }
+      : materials
+
+    // 1. Ground Floor Assembly (Foundation, Mudsill, Joists, Subfloor)
+    if (isFullStructure && showFloor) {
+      FloorSystem.buildFloor(floorGroupRef.current, ghostMaterials, {
+        length: wallLengthFt,
+        width: widthFt,
+        studW,
+        layers: {
+          ...layers,
+          foundation: layers.foundation !== false && showFoundation,
+        },
+        joistSpacingIn: studSpacingIn,
         registerMesh,
       })
     }
 
-    // 2. Wall System
-    const totalStudsEst = estimate?.studBreakdown?.totalRequired
-    const sheathingSheetsEst = estimate?.sheathing?.sheetsRequired
+    // 2. Wall Assemblies (Story 1 & Story 2)
+    if (showFirstWalls) {
+      const totalStudsEst = estimate?.studBreakdown?.totalRequired
+      const sheathingSheetsEst = estimate?.sheathing?.sheetsRequired
 
-    WallSystem.buildWallSystem(wallsGroupRef.current, materials, {
-      wall,
-      walls,
-      openings,
-      studSpacingIn,
-      measurementSystem,
-      topPlate,
-      wallThickness,
-      isFullStructure,
-      propertyType,
-      propertyConfig,
-      layers,
-      showDimensions,
-      totalStudCountEstimate: totalStudsEst,
-      sheathingSheetsEstimate: sheathingSheetsEst,
-      isSectionCut,
-      registerMesh,
-    })
+      WallSystem.buildWallSystem(wallsGroupRef.current, materials, {
+        wall,
+        walls,
+        openings,
+        studSpacingIn,
+        measurementSystem,
+        topPlate,
+        wallThickness,
+        isFullStructure,
+        propertyType,
+        propertyConfig,
+        layers,
+        showDimensions,
+        totalStudCountEstimate: totalStudsEst,
+        sheathingSheetsEstimate: sheathingSheetsEst,
+        isSectionCut,
+        isCutaway: cutawayActive,
+        viewMode,
+        numStories: showUpperWalls ? 2 : 1,
+        activeWallPrefix,
+        holographicGhost,
+        frameToFinish,
+        registerMesh,
+      })
+    }
 
-    // 3. Roof System
-    if (isFullStructure) {
-      RoofSystem.buildRoof(roofGroupRef.current, materials, {
+    // 3. Roof Framing Assembly (Rafters, Ridge, Gable Framing, Sheathing)
+    if (isFullStructure && showRoof) {
+      RoofSystem.buildRoof(roofGroupRef.current, ghostMaterials, {
         length: wallLengthFt,
-        width,
-        wallHeight: wallHeightFt,
+        width: widthFt,
+        wallHeight: totalWallH,
         studW,
         layers,
         isSectionCut,
+        isCutaway: cutawayActive,
         registerMesh,
       })
     }
@@ -206,11 +452,20 @@ export function FramingScene({
     layers,
     selectedElementId,
     estimate,
+    viewMode,
+    numStories,
+    constructionProgress,
     isSectionCut,
+    isCutaway,
     showDimensions,
     wallLengthFt,
-    wallHeightFt,
+    widthFt,
+    totalWallH,
     studW,
+    effectiveStories,
+    activeWallDirection,
+    holographicGhost,
+    frameToFinish,
   ])
 
   // ─── Initialize Three.js WebGL Engine ───
@@ -227,16 +482,20 @@ export function FramingScene({
     scene.background = new THREE.Color(0x090e17) // Deep dark technical background
     sceneRef.current = scene
 
-    // Ground Construction Blueprint Grid
-    const gridHelper = new THREE.GridHelper(60, 60, 0x1e293b, 0x111827)
-    gridHelper.position.y = -0.02
+    // Ground Construction Blueprint Grid (lowered opacity, under building)
+    const gridHelper = new THREE.GridHelper(80, 80, 0x1f2937, 0x111827)
+    gridHelper.position.y = -(joistDepth + 1.5 + 0.05) // Beneath foundation
+    if (gridHelper.material instanceof THREE.Material) {
+      gridHelper.material.transparent = true
+      gridHelper.material.opacity = 0.4
+    }
     scene.add(gridHelper)
 
     // 2. Camera
     const camera = new THREE.PerspectiveCamera(45, width / height, 0.1, 1000)
     cameraRef.current = camera
 
-    // 3. Renderer with soft shadows
+    // 3. Renderer with soft shadows and anti-aliasing
     const renderer = new THREE.WebGLRenderer({
       canvas,
       antialias: true,
@@ -245,39 +504,47 @@ export function FramingScene({
     renderer.setSize(width, height)
     renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2))
     renderer.shadowMap.enabled = true
-    renderer.shadowMap.type = THREE.PCFSoftShadowMap
+    renderer.shadowMap.type = THREE.PCFShadowMap
     rendererRef.current = renderer
 
-    // 4. Controls
+    // 4. Orbit Controls (touch-friendly with damping)
     const controls = new OrbitControls(camera, canvas)
     controls.enableDamping = true
-    controls.dampingFactor = 0.05
+    controls.dampingFactor = 0.06
     controls.maxPolarAngle = Math.PI / 2 + 0.08
-    controls.minDistance = 3
-    controls.maxDistance = 75
+    controls.minDistance = 4
+    controls.maxDistance = 110
     controlsRef.current = controls
 
-    // 5. Lighting: Crisp construction lighting
-    const ambientLight = new THREE.AmbientLight(0xfff5ea, 0.85)
+    // 5. Architectural Lighting (Key sun + Front fill + Cool sky fill + Ground bounce + subtle coral accent)
+    const ambientLight = new THREE.AmbientLight(0xffffff, 1.45)
     scene.add(ambientLight)
 
-    const keySun = new THREE.DirectionalLight(0xfffaee, 1.8)
-    keySun.position.set(35, 50, 30)
+    const keySun = new THREE.DirectionalLight(0xfffaea, 2.2)
+    keySun.position.set(35, 55, 45)
     keySun.castShadow = true
     keySun.shadow.mapSize.width = 2048
     keySun.shadow.mapSize.height = 2048
     keySun.shadow.bias = -0.0002
     scene.add(keySun)
 
-    const fillLight = new THREE.DirectionalLight(0x7090b0, 0.65)
-    fillLight.position.set(-30, 25, -25)
-    scene.add(fillLight)
+    const frontFill = new THREE.DirectionalLight(0xffeedd, 1.2)
+    frontFill.position.set(0, 25, 45)
+    scene.add(frontFill)
 
-    const coralAccent = new THREE.PointLight(0xff5f6d, 1.0, 45)
-    coralAccent.position.set(0, 15, 12)
+    const skyFill = new THREE.DirectionalLight(0x93c5fd, 0.85)
+    skyFill.position.set(-35, 30, -30)
+    scene.add(skyFill)
+
+    const groundBounce = new THREE.DirectionalLight(0x64748b, 0.45)
+    groundBounce.position.set(0, -30, 0)
+    scene.add(groundBounce)
+
+    const coralAccent = new THREE.PointLight(0xff5f6d, 1.0, 60)
+    coralAccent.position.set(0, 20, 25)
     scene.add(coralAccent)
 
-    // 6. Root & Subsystem Groups
+    // 6. Root & Construction Assembly Groups
     const modelRoot = new THREE.Group()
     const floorGroup = new THREE.Group()
     const wallsGroup = new THREE.Group()
@@ -294,7 +561,7 @@ export function FramingScene({
     roofGroupRef.current = roofGroup
 
     // 7. Materials & Selection Manager
-    const materials = createFramingMaterials(isWireframe)
+    const materials = createFramingMaterials(viewMode, isWireframe)
     materialsRef.current = materials
 
     const selectionManager = new SelectionManager(materials, onSelectElement, onHoverElement)
@@ -303,33 +570,120 @@ export function FramingScene({
     // Initial Camera Positioning
     resetCamera()
 
-    // 8. Animation & Render Loop (with Exploded View interpolation)
+    // 8. Animation & Render Loop (with Smooth Exploded View interpolation)
     let animationFrameId: number
     const animate = () => {
       animationFrameId = requestAnimationFrame(animate)
 
-      // Auto Rotate
+      // Auto Rotate (disabled by default)
       if (controlsRef.current) {
         controlsRef.current.autoRotate = autoRotate
         controlsRef.current.autoRotateSpeed = 1.0
         controlsRef.current.update()
       }
 
-      // Smooth Exploded View transition
+      // Smooth Exploded View transition (Prompt Req 16: ROOF ↑, UPPER WALLS ↑, FLOOR 2 ↑, WALLS 1, FOUNDATION ↓)
       const targetExp = targetExplodedRef.current
       const currentExp = explodedProgressRef.current
-      if (Math.abs(targetExp - currentExp) > 0.005) {
+      if (Math.abs(targetExp - currentExp) > 0.004) {
         const nextExp = currentExp + (targetExp - currentExp) * 0.1
         explodedProgressRef.current = nextExp
 
-        if (roofGroupRef.current) {
-          roofGroupRef.current.position.y = nextExp * 6.0
-        }
-        if (floorGroupRef.current) {
-          floorGroupRef.current.position.y = -nextExp * 3.5
-        }
-        if (wallsGroupRef.current) {
-          wallsGroupRef.current.position.y = 0
+        if (isTower && wallsGroupRef.current) {
+          const crown = wallsGroupRef.current.getObjectByName('tower-crown-group')
+          if (crown) crown.position.y = nextExp * 10.0
+
+          const foundation = wallsGroupRef.current.getObjectByName('tower-foundation-group')
+          if (foundation) foundation.position.y = -nextExp * 4.0
+
+          const floors = wallsGroupRef.current.getObjectByName('tower-floors-group')
+          if (floors) {
+            floors.children.forEach((lvl, idx) => {
+              lvl.position.y = (idx - 3.5) * nextExp * 1.5
+            })
+          }
+
+          const diagrid = wallsGroupRef.current.getObjectByName('tower-diagrid-group')
+          if (diagrid) {
+            diagrid.scale.set(1 + nextExp * 0.12, 1, 1 + nextExp * 0.12)
+          }
+        } else if (isCommercial && wallsGroupRef.current) {
+          const pergola = wallsGroupRef.current.getObjectByName('comm-pergola-group')
+          if (pergola) pergola.position.y = nextExp * 7.5
+          const foundation = wallsGroupRef.current.getObjectByName('comm-foundation-group')
+          if (foundation) foundation.position.y = -nextExp * 3.0
+          const floors = wallsGroupRef.current.getObjectByName('comm-floors-group')
+          if (floors) {
+            floors.children.forEach((lvl, idx) => {
+              lvl.position.y = (idx - 1.5) * nextExp * 2.2
+            })
+          }
+        } else if (isAFrame && wallsGroupRef.current) {
+          const rafters = wallsGroupRef.current.getObjectByName('aframe-rafters-group')
+          if (rafters) rafters.position.y = nextExp * 5.0
+          const loft = wallsGroupRef.current.getObjectByName('aframe-loft-group')
+          if (loft) loft.position.y = nextExp * 2.5
+          const foundation = wallsGroupRef.current.getObjectByName('aframe-foundation-group')
+          if (foundation) foundation.position.y = -nextExp * 2.5
+        } else if (isIndustrial && wallsGroupRef.current) {
+          const trusses = wallsGroupRef.current.getObjectByName('ind-trusses-group')
+          if (trusses) trusses.position.y = nextExp * 5.5
+          const mezz = wallsGroupRef.current.getObjectByName('ind-mezzanine-group')
+          if (mezz) mezz.position.y = nextExp * 2.2
+          const foundation = wallsGroupRef.current.getObjectByName('ind-foundation-group')
+          if (foundation) foundation.position.y = -nextExp * 2.5
+        } else if (isObsTower && wallsGroupRef.current) {
+          const skydeck = wallsGroupRef.current.getObjectByName('obs-skydeck-group')
+          if (skydeck) skydeck.position.y = nextExp * 8.0
+          const ramp = wallsGroupRef.current.getObjectByName('obs-ramp-group')
+          if (ramp) ramp.scale.set(1 + nextExp * 0.25, 1, 1 + nextExp * 0.25)
+          const foundation = wallsGroupRef.current.getObjectByName('obs-foundation-group')
+          if (foundation) foundation.position.y = -nextExp * 3.0
+        } else {
+          if (roofGroupRef.current) {
+            roofGroupRef.current.position.y = nextExp * 6.8
+          }
+          if (floorGroupRef.current) {
+            floorGroupRef.current.position.y = -nextExp * 3.2
+          }
+          if (wallsGroupRef.current) {
+            // Story 1: Cardinal separation revealing 3-stud California corners and sill anchors
+            const front = wallsGroupRef.current.getObjectByName('wall-group-Story1-Front')
+            if (front) front.position.z = widthFt / 2 + nextExp * 4.8
+            const back = wallsGroupRef.current.getObjectByName('wall-group-Story1-Back')
+            if (back) back.position.z = -widthFt / 2 - nextExp * 4.8
+            const left = wallsGroupRef.current.getObjectByName('wall-group-Story1-Left')
+            if (left) left.position.x = -wallLengthFt / 2 - nextExp * 4.8
+            const right = wallsGroupRef.current.getObjectByName('wall-group-Story1-Right')
+            if (right) right.position.x = wallLengthFt / 2 + nextExp * 4.8
+
+            // Story 2: Upper walls separation
+            const front2 = wallsGroupRef.current.getObjectByName('wall-group-Story2-Front')
+            if (front2) {
+              front2.position.z = widthFt / 2 + nextExp * 4.8
+              front2.position.y = story2ElevationY + nextExp * 2.8
+            }
+            const back2 = wallsGroupRef.current.getObjectByName('wall-group-Story2-Back')
+            if (back2) {
+              back2.position.z = -widthFt / 2 - nextExp * 4.8
+              back2.position.y = story2ElevationY + nextExp * 2.8
+            }
+            const left2 = wallsGroupRef.current.getObjectByName('wall-group-Story2-Left')
+            if (left2) {
+              left2.position.x = -wallLengthFt / 2 - nextExp * 4.8
+              left2.position.y = story2ElevationY + nextExp * 2.8
+            }
+            const right2 = wallsGroupRef.current.getObjectByName('wall-group-Story2-Right')
+            if (right2) {
+              right2.position.x = wallLengthFt / 2 + nextExp * 4.8
+              right2.position.y = story2ElevationY + nextExp * 2.8
+            }
+
+            const story2Group = wallsGroupRef.current.children.find((c) => c.name === 'second-floor-system')
+            if (story2Group) {
+              story2Group.position.y = (effectiveStories === 2 ? wallHeightFt : 0) + nextExp * 2.2
+            }
+          }
         }
       }
 
@@ -371,16 +725,17 @@ export function FramingScene({
     }
   }, [selectedElementId])
 
-  // Update Wireframe mode
+  // Update Materials when viewMode or isWireframe changes
   useEffect(() => {
     if (materialsRef.current) {
+      const isWire = isWireframe || viewMode === 'wireframe'
       Object.values(materialsRef.current).forEach((mat) => {
         if (mat instanceof THREE.MeshStandardMaterial) {
-          mat.wireframe = isWireframe
+          mat.wireframe = isWire
         }
       })
     }
-  }, [isWireframe])
+  }, [isWireframe, viewMode])
 
   // Update Pan vs Orbit Control Mode
   useEffect(() => {
@@ -417,3 +772,4 @@ export function FramingScene({
     </div>
   )
 }
+

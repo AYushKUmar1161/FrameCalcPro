@@ -11,7 +11,6 @@ import {
 } from 'lucide-react'
 import { useProjectContext } from '../context/ProjectContext'
 import { formatCurrency } from '../utils/calculations'
-import { WallVisualizer } from '../components/visualizer/WallVisualizer'
 import { ResultsDashboard } from '../components/dashboard/ResultsDashboard'
 import { Button } from '../components/ui/Button'
 import { PROPERTY_TYPES } from '../data/propertyTypes'
@@ -33,10 +32,6 @@ export function ProjectOverviewPage() {
       </div>
     )
   }
-
-  const studSpacingIn = activeProject.settings.studSpacing === 'custom'
-    ? activeProject.settings.customStudSpacing
-    : Number(activeProject.settings.studSpacing)
 
   const quickLinks = [
     { to: 'walls', icon: Ruler, label: 'Walls', count: activeProject.walls.length, color: 'text-blue-600 bg-blue-50' },
@@ -108,28 +103,6 @@ export function ProjectOverviewPage() {
           </Link>
         ))}
       </div>
-
-      {/* Wall Visualizer */}
-      {activeProject.walls.length > 0 && (
-        <div className="rounded-lg border border-zinc-200 bg-white p-5">
-          <h2 className="mb-4 text-base font-semibold text-zinc-900">Wall Framing Preview</h2>
-          <WallVisualizer
-            wall={activeProject.walls[0]}
-            walls={activeProject.walls}
-            openings={activeProject.openings}
-            studSpacingIn={studSpacingIn}
-            measurementSystem={activeProject.measurementSystem}
-            topPlate={activeProject.settings.topPlate}
-            propertyType={activeProject.projectType}
-            propertyConfig={activeProject.propertyConfig}
-          />
-          {activeProject.walls.length > 1 && (
-            <p className="mt-2 text-xs text-zinc-400 text-center">
-              Showing {activeProject.walls[0].name} · <Link to="walls" className="text-brand-600 hover:underline">View all {activeProject.walls.length} walls</Link>
-            </p>
-          )}
-        </div>
-      )}
 
       {/* Material breakdown summary */}
       {estimate.materialLines.length > 0 && (

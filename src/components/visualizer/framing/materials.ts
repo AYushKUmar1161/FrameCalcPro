@@ -9,6 +9,9 @@ import {
   getGalvanizedSteelTexture,
   getHouseWrapTexture,
   getCedarSidingTexture,
+  getGrassTexture,
+  getCedarFenceTexture,
+  getPlywoodSheathingTexture,
 } from './textures/proceduralTextures'
 
 export interface FramingMaterialSet {
@@ -41,6 +44,13 @@ export interface FramingMaterialSet {
   galvanizedHardware: THREE.MeshStandardMaterial
   anchorBolt: THREE.MeshStandardMaterial
   concreteSlab: THREE.MeshStandardMaterial
+  grassLawn: THREE.MeshStandardMaterial
+  cedarFence: THREE.MeshStandardMaterial
+  plywoodSheathing: THREE.MeshStandardMaterial
+  windowFrame: THREE.MeshStandardMaterial
+  windowGlass: THREE.MeshStandardMaterial
+  doorPanel: THREE.MeshStandardMaterial
+  concreteLanding: THREE.MeshStandardMaterial
   dispose: () => void
 }
 
@@ -62,6 +72,9 @@ export function createFramingMaterials(
   const galvanizedTexture = isRealistic ? getGalvanizedSteelTexture() : undefined
   const wrbTexture = isRealistic ? getHouseWrapTexture() : undefined
   const sidingTexture = isRealistic ? getCedarSidingTexture() : undefined
+  const grassTexture = isRealistic ? getGrassTexture() : undefined
+  const fenceTexture = isRealistic ? getCedarFenceTexture() : undefined
+  const plywoodTexture = isRealistic ? getPlywoodSheathingTexture() : undefined
 
   // 1. Common Wall Studs (Warm Douglas Fir / SPF Kiln-Dried with authentic wood grain)
   const stud = new THREE.MeshStandardMaterial({
@@ -354,6 +367,66 @@ export function createFramingMaterials(
     wireframe: isWire,
   })
 
+  // 30. Suburban Green Lawn Grass Ground Plane
+  const grassLawn = new THREE.MeshStandardMaterial({
+    map: grassTexture,
+    color: isRealistic ? 0xffffff : 0x4d7c0f,
+    roughness: 0.92,
+    metalness: 0.02,
+  })
+
+  // 31. Western Red Cedar Perimeter Fence
+  const cedarFence = new THREE.MeshStandardMaterial({
+    map: fenceTexture,
+    color: isRealistic ? 0xffffff : 0x9a6b43,
+    roughness: 0.88,
+    metalness: 0.02,
+    side: THREE.DoubleSide,
+  })
+
+  // 32. Authentic Construction Plywood Sheathing with Nail Rows ("Framed by Hand")
+  const plywoodSheathing = new THREE.MeshStandardMaterial({
+    map: plywoodTexture,
+    color: isRealistic ? 0xffffff : 0xdba86b,
+    roughness: 0.82,
+    metalness: 0.02,
+    side: THREE.DoubleSide,
+  })
+
+  // 33. White Vinyl/Wood Window Frames & Trim Casing
+  const windowFrame = new THREE.MeshStandardMaterial({
+    color: 0xfcfcfc,
+    roughness: 0.28,
+    metalness: 0.05,
+    side: THREE.DoubleSide,
+  })
+
+  // 34. Reflective Architectural Window Glass
+  const windowGlass = new THREE.MeshStandardMaterial({
+    color: 0xbae6fd,
+    roughness: 0.04,
+    metalness: 0.96,
+    transparent: true,
+    opacity: 0.65,
+    side: THREE.DoubleSide,
+  })
+
+  // 35. White Front Entry Door with Glass Lite
+  const doorPanel = new THREE.MeshStandardMaterial({
+    color: 0xf8fafc,
+    roughness: 0.35,
+    metalness: 0.08,
+    side: THREE.DoubleSide,
+  })
+
+  // 36. Poured Concrete Front Porch Stoop & Landing Steps
+  const concreteLanding = new THREE.MeshStandardMaterial({
+    map: concreteTexture,
+    color: isRealistic ? 0xffffff : 0x94a3b8,
+    roughness: 0.92,
+    metalness: 0.04,
+  })
+
   const allMaterials = [
     stud,
     plate,
@@ -384,6 +457,13 @@ export function createFramingMaterials(
     galvanizedHardware,
     anchorBolt,
     concreteSlab,
+    grassLawn,
+    cedarFence,
+    plywoodSheathing,
+    windowFrame,
+    windowGlass,
+    doorPanel,
+    concreteLanding,
   ]
 
   const dispose = () => {
@@ -420,6 +500,13 @@ export function createFramingMaterials(
     galvanizedHardware,
     anchorBolt,
     concreteSlab,
+    grassLawn,
+    cedarFence,
+    plywoodSheathing,
+    windowFrame,
+    windowGlass,
+    doorPanel,
+    concreteLanding,
     dispose,
   }
 }

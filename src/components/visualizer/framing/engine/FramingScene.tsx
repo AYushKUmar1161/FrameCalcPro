@@ -14,6 +14,7 @@ import { CommercialFrameSystem } from '../geometry/CommercialFrameSystem'
 import { AFrameCabinSystem } from '../geometry/AFrameCabinSystem'
 import { IndustrialWarehouseSystem } from '../geometry/IndustrialWarehouseSystem'
 import { ObservationTowerSystem } from '../geometry/ObservationTowerSystem'
+import { SuburbanHomeSystem } from '../geometry/SuburbanHomeSystem'
 
 export interface FramingSceneProps {
   wall?: Wall | null
@@ -93,6 +94,10 @@ export function FramingScene({
 
   const materialsRef = useRef<FramingMaterialSet | null>(null)
   const selectionManagerRef = useRef<SelectionManager | null>(null)
+  const environmentGroupRef = useRef<THREE.Group | null>(null)
+  const gridHelperRef = useRef<THREE.GridHelper | null>(null)
+  const keySunRef = useRef<THREE.DirectionalLight | null>(null)
+  const groundBounceRef = useRef<THREE.DirectionalLight | null>(null)
 
   // Exploded view animation state
   const explodedProgressRef = useRef(0)
@@ -104,6 +109,12 @@ export function FramingScene({
   const isAFrame = propertyType === 'a-frame' || propertyType === 'aframe'
   const isIndustrial = propertyType === 'industrial' || propertyType === 'warehouse'
   const isObsTower = propertyType === 'observation-tower' || propertyType === 'helical-tower'
+  const isSuburbanHome =
+    isFullStructure &&
+    (propertyType === 'residential' ||
+      propertyType === 'suburban-home' ||
+      propertyType === 'house' ||
+      !propertyType)
 
   const wallLengthFt = wall ? wall.length : (walls[0]?.length || 40)
   const wallHeightFt = wall ? wall.height : (walls[0]?.height || 8)
@@ -170,6 +181,15 @@ export function FramingScene({
       return
     }
 
+    if (isSuburbanHome) {
+      const targetCenterY = 11.0
+      controls.target.set(0, targetCenterY, 2)
+      camera.position.set(2, 13.5, 48)
+      camera.lookAt(0, targetCenterY, 2)
+      controls.update()
+      return
+    }
+
     const targetCenterY = isFullStructure ? totalBuildingH * 0.46 : wallHeightFt * 0.5
     controls.target.set(0, targetCenterY, 0)
 
@@ -185,7 +205,7 @@ export function FramingScene({
     )
     camera.lookAt(0, targetCenterY, 0)
     controls.update()
-  }, [wallLengthFt, widthFt, totalBuildingH, isFullStructure, wallHeightFt, isTower, isObsTower, isCommercial, isAFrame, isIndustrial])
+  }, [wallLengthFt, widthFt, totalBuildingH, isFullStructure, wallHeightFt, isTower, isObsTower, isCommercial, isAFrame, isIndustrial, isSuburbanHome])
 
   // Expose camera and reset function globally for viewer toolbar buttons
   useEffect(() => {
@@ -250,9 +270,11 @@ export function FramingScene({
       while (grp.children.length > 0) {
         const obj = grp.children[0]
         grp.remove(obj)
-        if (obj instanceof THREE.Mesh) {
-          obj.geometry.dispose()
-        }
+        obj.traverse((child) => {
+          if (child instanceof THREE.Mesh) {
+            child.geometry?.dispose()
+          }
+        })
       }
     }
 
@@ -263,6 +285,157 @@ export function FramingScene({
     const materials = createFramingMaterials(viewMode, isWireframe)
     materialsRef.current = materials
     selectionManager.setMaterials(materials)
+
+    // Update suburban daylight environment vs technical CAD environment
+    if (environmentGroupRef.current && sceneRef.current) {
+      const envGroup = environmentGroupRef.current
+      while (envGroup.children.length > 0) {
+        const obj = envGroup.children[0]
+        envGroup.remove(obj)
+        if (obj instanceof THREE.Mesh) {
+          obj.geometry.dispose()
+        }
+      }
+
+      const isDaytimeReal = viewMode === 'realistic' && !isWireframe
+      if (isDaytimeReal) {
+        sceneRef.current.background = new THREE.Color(0xa0d5f8)
+        sceneRef.current.fog = new THREE.FogExp2(0xcfe9fc, 0.0035)
+        if (gridHelperRef.current) gridHelperRef.current.visible = false
+        if (keySunRef.current) keySunRef.current.intensity = 2.8
+        if (groundBounceRef.current) groundBounceRef.current.color.set(0x4d7c0f)
+
+        // 1. Verdant suburban grass lawn plane
+        const lawnGeom = new THREE.PlaneGeometry(240, 240)
+        const lawnMesh = new THREE.Mesh(lawnGeom, materials.grassLawn)
+        lawnMesh.rotation.x = -Math.PI / 2
+        lawnMesh.position.y = -1.2
+        lawnMesh.receiveShadow = true
+        envGroup.add(lawnMesh)
+
+        // 2. Western red cedar perimeter privacy fence (Matching reference photograph)
+        const fenceH = 6.5
+        const fenceThick = 0.4
+        const fenceMat = materials.cedarFence
+
+        // Left Fence Line (X = -42, Z from -48 to 32)
+        const leftFenceLen = 80
+        const leftFence = new THREE.Mesh(new THREE.BoxGeometry(fenceThick, fenceH, leftFenceLen), fenceMat)
+        leftFence.position.set(-42, -1.2 + fenceH / 2, -8)
+        leftFence.castShadow = true
+        leftFence.receiveShadow = true
+        envGroup.add(leftFence)
+
+        // Right Fence Line (X = 42, Z from -48 to 32)
+        const rightFenceLen = 80
+        const rightFence = new THREE.Mesh(new THREE.BoxGeometry(fenceThick, fenceH, rightFenceLen), fenceMat)
+        rightFence.position.set(42, -1.2 + fenceH / 2, -8)
+        rightFence.castShadow = true
+        rightFence.receiveShadow = true
+        envGroup.add(rightFence)
+
+        // Back Fence Line (Z = -48, X from -42 to 42)
+        const backFenceLen = 84
+        const backFence = new THREE.Mesh(new THREE.BoxGeometry(backFenceLen, fenceH, fenceThick), fenceMat)
+        backFence.position.set(0, -1.2 + fenceH / 2, -48)
+        backFence.castShadow = true
+        backFence.receiveShadow = true
+        envGroup.add(backFence)
+
+        // Fence Posts every 8ft along perimeter
+        const postGeom = new THREE.BoxGeometry(0.5, fenceH + 0.3, 0.5)
+        for (let fz = -48; fz <= 32; fz += 8) {
+          const lp = new THREE.Mesh(postGeom, fenceMat)
+          lp.position.set(-42, -1.2 + (fenceH + 0.3) / 2, fz)
+          lp.castShadow = true
+          envGroup.add(lp)
+
+          const rp = new THREE.Mesh(postGeom, fenceMat)
+          rp.position.set(42, -1.2 + (fenceH + 0.3) / 2, fz)
+          rp.castShadow = true
+          envGroup.add(rp)
+        }
+
+        // 3. Background Suburban Houses (As seen in the reference photo)
+        const houseBodyMat = new THREE.MeshStandardMaterial({
+          color: 0xf1f5f9,
+          roughness: 0.7,
+        })
+        const houseRoofMat = new THREE.MeshStandardMaterial({
+          color: 0x475569,
+          roughness: 0.6,
+        })
+
+        // Left Neighbor House
+        const leftHouse = new THREE.Group()
+        leftHouse.position.set(-65, -1.2, 5)
+        const lhBody = new THREE.Mesh(new THREE.BoxGeometry(26, 16, 34), houseBodyMat)
+        lhBody.position.y = 8
+        lhBody.castShadow = true
+        leftHouse.add(lhBody)
+        const lhRoof = new THREE.Mesh(new THREE.ConeGeometry(19, 10, 4), houseRoofMat)
+        lhRoof.position.y = 21
+        lhRoof.rotation.y = Math.PI / 4
+        lhRoof.castShadow = true
+        leftHouse.add(lhRoof)
+        envGroup.add(leftHouse)
+
+        // Right Neighbor House
+        const rightHouse = new THREE.Group()
+        rightHouse.position.set(65, -1.2, 5)
+        const rhBody = new THREE.Mesh(new THREE.BoxGeometry(26, 16, 34), houseBodyMat)
+        rhBody.position.y = 8
+        rhBody.castShadow = true
+        rightHouse.add(rhBody)
+        const rhRoof = new THREE.Mesh(new THREE.ConeGeometry(19, 10, 4), houseRoofMat)
+        rhRoof.position.y = 21
+        rhRoof.rotation.y = Math.PI / 4
+        rhRoof.castShadow = true
+        rightHouse.add(rhRoof)
+        envGroup.add(rightHouse)
+
+        // 4. Suburban Green Trees (Suburban deciduous foliage in background & borders)
+        const trunkMat = new THREE.MeshStandardMaterial({ color: 0x4a3728, roughness: 0.9 })
+        const leafMat1 = new THREE.MeshStandardMaterial({ color: 0x2d6a4f, roughness: 0.85 })
+        const leafMat2 = new THREE.MeshStandardMaterial({ color: 0x40916c, roughness: 0.85 })
+        const leafMat3 = new THREE.MeshStandardMaterial({ color: 0x1b4332, roughness: 0.85 })
+        const treeMats = [leafMat1, leafMat2, leafMat3]
+
+        const treeCoords = [
+          [-48, -25], [-50, -10], [-52, 10], [-46, 25],
+          [48, -25], [50, -10], [52, 10], [46, 25],
+          [-28, -55], [0, -58], [28, -55],
+        ]
+
+        treeCoords.forEach(([tx, tz], tidx) => {
+          const treeGrp = new THREE.Group()
+          treeGrp.position.set(tx, -1.2, tz)
+
+          const trunkH = 8 + (tidx % 3) * 2
+          const trunk = new THREE.Mesh(new THREE.CylinderGeometry(0.5, 0.7, trunkH, 8), trunkMat)
+          trunk.position.y = trunkH / 2
+          trunk.castShadow = true
+          treeGrp.add(trunk)
+
+          const foliageR = 5 + (tidx % 2) * 1.5
+          const foliage = new THREE.Mesh(
+            new THREE.DodecahedronGeometry(foliageR, 1),
+            treeMats[tidx % treeMats.length],
+          )
+          foliage.position.y = trunkH + foliageR * 0.7
+          foliage.castShadow = true
+          treeGrp.add(foliage)
+
+          envGroup.add(treeGrp)
+        })
+      } else {
+        sceneRef.current.background = new THREE.Color(0x090e17)
+        sceneRef.current.fog = null
+        if (gridHelperRef.current) gridHelperRef.current.visible = true
+        if (keySunRef.current) keySunRef.current.intensity = 2.4
+        if (groundBounceRef.current) groundBounceRef.current.color.set(0x64748b)
+      }
+    }
 
     const cutawayActive = isCutaway || viewMode === 'cutaway'
 
@@ -333,6 +506,21 @@ export function FramingScene({
     // Helical Diagrid Observation Tower
     if (isObsTower) {
       ObservationTowerSystem.buildTower(wallsGroupRef.current, materials, {
+        layers,
+        viewMode,
+        isWireframe,
+        isSectionCut,
+        isCutaway: cutawayActive,
+        showDimensions,
+        registerMesh,
+      })
+      selectionManager.applySelection(selectedElementId)
+      return
+    }
+
+    // Authentic Suburban Custom Home ("Framed by hand. Checked twice.")
+    if (isSuburbanHome) {
+      SuburbanHomeSystem.buildHome(wallsGroupRef.current, materials, {
         layers,
         viewMode,
         isWireframe,
@@ -470,6 +658,7 @@ export function FramingScene({
     holographicGhost,
     frameToFinish,
     isWireframe,
+    isSuburbanHome,
   ])
 
   // ─── Initialize Three.js WebGL Engine ───
@@ -554,6 +743,16 @@ export function FramingScene({
     const coralAccent = new THREE.PointLight(0xff5f6d, 1.0, 60)
     coralAccent.position.set(0, 20, 25)
     scene.add(coralAccent)
+
+    gridHelperRef.current = gridHelper
+    keySunRef.current = keySun
+    groundBounceRef.current = groundBounce
+
+    // Environment Group for Suburban Lawn, Fence, Trees, Sky
+    const environmentGroup = new THREE.Group()
+    environmentGroup.name = 'suburban-environment-group'
+    scene.add(environmentGroup)
+    environmentGroupRef.current = environmentGroup
 
     // 6. Root & Construction Assembly Groups
     const modelRoot = new THREE.Group()
@@ -650,6 +849,18 @@ export function FramingScene({
           if (ramp) ramp.scale.set(1 + nextExp * 0.25, 1, 1 + nextExp * 0.25)
           const foundation = wallsGroupRef.current.getObjectByName('obs-foundation-group')
           if (foundation) foundation.position.y = -nextExp * 3.0
+        } else if (isSuburbanHome && wallsGroupRef.current) {
+          const home = wallsGroupRef.current.getObjectByName('suburban-craftsman-home')
+          if (home) {
+            const roof = home.getObjectByName('roof-framing-assembly')
+            if (roof) roof.position.y = nextExp * 7.5
+            const s2 = home.getObjectByName('story-2-framing-assembly')
+            if (s2) s2.position.y = nextExp * 4.0
+            const f2 = home.getObjectByName('story-2-floor-band')
+            if (f2) f2.position.y = nextExp * 2.0
+            const fnd = home.getObjectByName('concrete-foundation-perimeter')
+            if (fnd) fnd.position.y = -nextExp * 3.0
+          }
         } else {
           if (roofGroupRef.current) {
             roofGroupRef.current.position.y = nextExp * 6.8

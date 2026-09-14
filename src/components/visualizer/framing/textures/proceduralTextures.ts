@@ -11,6 +11,9 @@ interface ProceduralTextureCache {
   galvanized?: THREE.CanvasTexture
   wrb?: THREE.CanvasTexture
   siding?: THREE.CanvasTexture
+  grass?: THREE.CanvasTexture
+  fence?: THREE.CanvasTexture
+  plywood?: THREE.CanvasTexture
 }
 
 const textureCache: ProceduralTextureCache = {}
@@ -479,3 +482,175 @@ export function getCedarSidingTexture(): THREE.CanvasTexture {
   textureCache.siding = texture
   return texture
 }
+
+/**
+ * 9. Suburban Verdant Lawn Grass Texture
+ */
+export function getGrassTexture(): THREE.CanvasTexture {
+  if (textureCache.grass) return textureCache.grass
+
+  const canvas = document.createElement('canvas')
+  canvas.width = 512
+  canvas.height = 512
+  const ctx = canvas.getContext('2d')
+
+  if (ctx) {
+    // Rich verdant turf base
+    ctx.fillStyle = '#487d2f'
+    ctx.fillRect(0, 0, 512, 512)
+
+    // Fast mottled grass variation (subtle blade clusters)
+    const bladeColors = ['#3d6d25', '#558f38', '#345e1f', '#5f9d41', '#407228']
+    for (let i = 0; i < 400; i++) {
+      const gx = Math.random() * 512
+      const gy = Math.random() * 512
+      const gw = 2 + Math.random() * 6
+      const gh = 2 + Math.random() * 6
+      ctx.fillStyle = bladeColors[i % bladeColors.length]
+      ctx.fillRect(gx, gy, gw, gh)
+    }
+
+    // Subtle lawn mower rolling stripes
+    for (let x = 0; x < 512; x += 64) {
+      ctx.fillStyle = 'rgba(255, 255, 255, 0.05)'
+      ctx.fillRect(x, 0, 32, 512)
+    }
+  }
+
+  const texture = new THREE.CanvasTexture(canvas)
+  texture.colorSpace = THREE.SRGBColorSpace
+  texture.wrapS = THREE.RepeatWrapping
+  texture.wrapT = THREE.RepeatWrapping
+  texture.repeat.set(12, 12)
+  texture.needsUpdate = true
+  textureCache.grass = texture
+  return texture
+}
+
+/**
+ * 10. Western Red Cedar Perimeter Privacy Fence
+ */
+export function getCedarFenceTexture(): THREE.CanvasTexture {
+  if (textureCache.fence) return textureCache.fence
+
+  const canvas = document.createElement('canvas')
+  canvas.width = 512
+  canvas.height = 512
+  const ctx = canvas.getContext('2d')
+
+  if (ctx) {
+    ctx.fillStyle = '#946743'
+    ctx.fillRect(0, 0, 512, 512)
+
+    // Vertical fence pickets (8 pickets across 512px = 64px each)
+    const picketW = 64
+    for (let p = 0; p < 8; p++) {
+      const px = p * picketW
+
+      // Vertical shadow line between boards
+      ctx.fillStyle = '#3a2211'
+      ctx.fillRect(px, 0, 4, 512)
+
+      // Wood grain striations along picket
+      for (let x = px + 6; x < px + picketW - 4; x += 4) {
+        ctx.fillStyle = 'rgba(80, 45, 20, 0.12)'
+        ctx.fillRect(x, 0, 2, 512)
+      }
+
+      // Fastener nails at top and bottom stringer locations
+      ctx.fillStyle = '#222'
+      ctx.beginPath()
+      ctx.arc(px + picketW / 2, 80, 2.5, 0, Math.PI * 2)
+      ctx.arc(px + picketW / 2, 432, 2.5, 0, Math.PI * 2)
+      ctx.fill()
+    }
+  }
+
+  const texture = new THREE.CanvasTexture(canvas)
+  texture.colorSpace = THREE.SRGBColorSpace
+  texture.wrapS = THREE.RepeatWrapping
+  texture.wrapT = THREE.RepeatWrapping
+  texture.repeat.set(4, 1)
+  texture.needsUpdate = true
+  textureCache.fence = texture
+  return texture
+}
+
+/**
+ * 11. Authentic Construction Plywood / OSB Sheathing with Fastener Nail Patterns
+ * Matches the user's reference photograph ("Framed by hand. Checked twice.")
+ */
+export function getPlywoodSheathingTexture(): THREE.CanvasTexture {
+  if (textureCache.plywood) return textureCache.plywood
+
+  const canvas = document.createElement('canvas')
+  canvas.width = 512
+  canvas.height = 512
+  const ctx = canvas.getContext('2d')
+
+  if (ctx) {
+    // Golden amber structural sheathing base
+    const grad = ctx.createLinearGradient(0, 0, 512, 0)
+    grad.addColorStop(0, '#d19e5c')
+    grad.addColorStop(0.5, '#deb06e')
+    grad.addColorStop(1, '#cca062')
+    ctx.fillStyle = grad
+    ctx.fillRect(0, 0, 512, 512)
+
+    // Wood veneer grain & strand flakes
+    for (let i = 0; i < 600; i++) {
+      const fx = Math.random() * 512
+      const fy = Math.random() * 512
+      const fw = 15 + Math.random() * 35
+      const fh = 4 + Math.random() * 10
+      ctx.fillStyle = Math.random() > 0.5 ? '#b88242' : '#e5be82'
+      ctx.globalAlpha = 0.25
+      ctx.fillRect(fx, fy, fw, fh)
+    }
+    ctx.globalAlpha = 1.0
+
+    // Staggered sheet panel seam lines (1/8" expansion gap)
+    ctx.strokeStyle = '#4e2d14'
+    ctx.lineWidth = 2.5
+    ctx.beginPath()
+    ctx.moveTo(0, 256)
+    ctx.lineTo(512, 256)
+    ctx.stroke()
+
+    // Authentic black nail head rows (every 6" along perimeter, 12" field)
+    ctx.fillStyle = '#1c1c1c'
+    const studColumns = [16, 144, 272, 400, 496]
+    studColumns.forEach((colX) => {
+      for (let ny = 12; ny < 512; ny += 28) {
+        ctx.beginPath()
+        ctx.arc(colX + (Math.random() * 2 - 1), ny, 2.2, 0, Math.PI * 2)
+        ctx.fill()
+      }
+    })
+
+    // APA Grade stamp
+    ctx.save()
+    ctx.translate(256, 380)
+    ctx.strokeStyle = 'rgba(40, 25, 10, 0.7)'
+    ctx.lineWidth = 1.8
+    ctx.strokeRect(-50, -18, 100, 36)
+    ctx.fillStyle = 'rgba(40, 25, 10, 0.75)'
+    ctx.font = 'bold 8px monospace'
+    ctx.textAlign = 'center'
+    ctx.textBaseline = 'middle'
+    ctx.fillText('APA RATED SHEATHING', 0, -5)
+    ctx.font = '7px monospace'
+    ctx.fillText('EXPOSURE 1 • 7/16 INCH', 0, 6)
+    ctx.restore()
+  }
+
+  const texture = new THREE.CanvasTexture(canvas)
+  texture.colorSpace = THREE.SRGBColorSpace
+  texture.wrapS = THREE.RepeatWrapping
+  texture.wrapT = THREE.RepeatWrapping
+  texture.repeat.set(1, 1)
+  texture.needsUpdate = true
+  textureCache.plywood = texture
+  return texture
+}
+

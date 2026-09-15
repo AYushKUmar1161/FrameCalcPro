@@ -12,6 +12,7 @@ import { EstimatePage } from './pages/EstimatePage'
 import { ExportPage } from './pages/ExportPage'
 import { SettingsPage } from './pages/SettingsPage'
 import { CalculatorPage } from './pages/CalculatorPage'
+import { HouseModelPage } from './pages/HouseModelPage'
 import { ToastContainer } from './components/ui/Toast'
 import { AuthModal } from './components/auth/AuthModal'
 
@@ -28,6 +29,8 @@ export function AppRouter() {
         <Route element={<AppLayout />}>
           <Route path="/dashboard" element={<DashboardPage />} />
           <Route path="/calculator" element={<CalculatorPage />} />
+          <Route path="/house-model" element={<HouseModelPage />} />
+          <Route path="/ai-framing" element={<Navigate to="/house-model" replace />} />
           <Route path="/projects" element={<ProjectsPage />} />
           <Route path="/projects/new" element={<NewProjectPage />} />
 
@@ -41,6 +44,8 @@ export function AppRouter() {
             <Route path="export" element={<ExportPage />} />
             <Route path="settings" element={<SettingsPage />} />
             <Route path="wizard" element={<CalculatorPage />} />
+            <Route path="house-model" element={<HouseModelPage />} />
+            <Route path="ai-framing" element={<Navigate to="house-model" replace />} />
           </Route>
         </Route>
 

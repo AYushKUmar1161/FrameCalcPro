@@ -2,6 +2,7 @@ import { useState, useMemo } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
 import {
   ArrowRight,
+  Box,
   Calculator,
   Calendar,
   ChevronRight,
@@ -96,7 +97,13 @@ export function DashboardPage() {
           </p>
         </div>
 
-        <div className="flex items-center gap-3">
+        <div className="flex flex-wrap items-center gap-2.5">
+          <Link to="/house-model">
+            <Button variant="secondary" size="md">
+              <Box className="h-4 w-4 text-brand-600" />
+              <span>3D House Model</span>
+            </Button>
+          </Link>
           <Link to="/calculator">
             <Button variant="secondary" size="md">
               <Calculator className="h-4 w-4 text-brand-600" />

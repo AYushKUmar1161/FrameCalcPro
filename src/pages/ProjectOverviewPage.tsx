@@ -6,8 +6,8 @@ import {
   IndianRupee,
   Package,
   Ruler,
-  Settings,
   Layers,
+  Box,
 } from 'lucide-react'
 import { useProjectContext } from '../context/ProjectContext'
 import { formatCurrency } from '../utils/calculations'
@@ -34,12 +34,12 @@ export function ProjectOverviewPage() {
   }
 
   const quickLinks = [
+    { to: 'house-model', icon: Box, label: '3D House Model', count: null, color: 'text-amber-600 bg-amber-50' },
     { to: 'walls', icon: Ruler, label: 'Walls', count: activeProject.walls.length, color: 'text-blue-600 bg-blue-50' },
     { to: 'openings', icon: Package, label: 'Openings', count: activeProject.openings.length, color: 'text-purple-600 bg-purple-50' },
     { to: 'materials', icon: Layers, label: 'Prices', count: null, color: 'text-green-600 bg-green-50' },
     { to: 'estimate', icon: Calculator, label: 'Estimate', count: null, color: 'text-brand-600 bg-brand-50' },
     { to: 'export', icon: ClipboardList, label: 'Export', count: null, color: 'text-zinc-600 bg-zinc-100' },
-    { to: 'settings', icon: Settings, label: 'Settings', count: null, color: 'text-zinc-600 bg-zinc-100' },
   ]
 
   return (
@@ -75,9 +75,39 @@ export function ProjectOverviewPage() {
             <p className="mt-1 text-sm text-zinc-600 italic">{activeProject.notes}</p>
           )}
         </div>
-        <Link to="estimate">
-          <Button>
-            <IndianRupee className="h-4 w-4" /> View Estimate
+        <div className="flex items-center gap-2">
+          <Link to="house-model">
+            <Button variant="secondary">
+              <Box className="h-4 w-4" /> 3D House Model
+            </Button>
+          </Link>
+          <Link to="estimate">
+            <Button>
+              <IndianRupee className="h-4 w-4" /> View Estimate
+            </Button>
+          </Link>
+        </div>
+      </div>
+
+      {/* 3D House Model Multi-View Reconstruction Showcase Card */}
+      <div className="rounded-2xl border border-brand-200 bg-gradient-to-r from-brand-500/10 via-amber-500/5 to-white p-5 flex flex-wrap items-center justify-between gap-4 shadow-xs">
+        <div className="flex items-center gap-3.5">
+          <div className="flex h-12 w-12 items-center justify-center rounded-2xl bg-brand-500 text-white shadow-xs shrink-0">
+            <Box className="h-6 w-6" />
+          </div>
+          <div>
+            <div className="flex items-center gap-2">
+              <h3 className="text-base font-bold text-zinc-900">3D House Model (Multi-View Reconstruction)</h3>
+              <span className="rounded-full bg-brand-500 px-2 py-0.5 text-[10px] font-extrabold text-white">NEW</span>
+            </div>
+            <p className="text-xs text-zinc-600 mt-0.5 max-w-xl">
+              Inspect an interactive, high-fidelity 3D architectural model of the rustic timber cabin reconstructed faithfully from all 5 reference views.
+            </p>
+          </div>
+        </div>
+        <Link to="house-model">
+          <Button size="sm">
+            <Box className="h-4 w-4" /> Open 3D House Viewer
           </Button>
         </Link>
       </div>

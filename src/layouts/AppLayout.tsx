@@ -2,6 +2,7 @@ import { useState } from 'react'
 import { Link, NavLink, Outlet, useLocation, useNavigate } from 'react-router-dom'
 import { BrandLogo } from '../components/ui/BrandLogo'
 import {
+  Box,
   Calculator,
   ChevronRight,
   ClipboardList,
@@ -37,6 +38,7 @@ import { Dropdown } from '../components/ui/Dropdown'
 
 const primaryNavItems = [
   { to: '/dashboard', label: 'Dashboard', icon: LayoutDashboard },
+  { to: '/house-model', label: '3D House Model', icon: Box },
   { to: '/calculator', label: 'Step-by-Step Calculator', icon: Calculator },
   { to: '/projects', label: 'Project Library', icon: FolderKanban },
 ]
@@ -145,6 +147,7 @@ export function AppLayout() {
             <div className="space-y-0.5 pt-1">
               {[
                 { to: `/projects/${activeProject.id}`, label: 'Overview', icon: LayoutDashboard, end: true },
+                { to: `/projects/${activeProject.id}/house-model`, label: '3D House Model', icon: Box },
                 { to: `/projects/${activeProject.id}/walls`, label: 'Walls Schedule', icon: ClipboardList },
                 { to: `/projects/${activeProject.id}/openings`, label: 'Doors & Windows', icon: Package },
                 { to: `/projects/${activeProject.id}/materials`, label: 'Material Prices', icon: Settings },

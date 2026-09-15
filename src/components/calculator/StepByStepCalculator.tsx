@@ -55,7 +55,6 @@ import { Badge } from '../ui/Badge'
 import { Modal } from '../ui/Modal'
 import { ResultsDashboard } from '../dashboard/ResultsDashboard'
 import { TakeoffTable } from '../materials/TakeoffTable'
-import { WallVisualizer } from '../visualizer/WallVisualizer'
 import { AssumptionsPanel } from '../estimate/AssumptionsPanel'
 import { calculateFramingEstimate } from '../../services/framingCalculator'
 import { exportToCsv, exportToPdf, printEstimate } from '../../services/exportService'
@@ -207,9 +206,6 @@ export function StepByStepCalculator({ initialProject, onComplete }: StepByStepC
   })
   const [openingErrors, setOpeningErrors] = useState<Record<string, string>>({})
 
-  // Visualizer selected wall
-  const [visualizerWallId, setVisualizerWallId] = useState<string>(walls[0]?.id ?? '')
-
   const lengthUnit = getLengthUnitLabel(measurementSystem)
   const smallUnit = getSmallLengthUnitLabel(measurementSystem)
 
@@ -330,7 +326,6 @@ export function StepByStepCalculator({ initialProject, onComplete }: StepByStepC
       showToast('Wall updated.', 'success')
     } else {
       setWalls((ws) => [...ws, wallData])
-      setVisualizerWallId(wallData.id)
       showToast('Wall added.', 'success')
     }
     setWallModalOpen(false)
@@ -443,9 +438,6 @@ export function StepByStepCalculator({ initialProject, onComplete }: StepByStepC
     if (onComplete) onComplete(currentProject)
     else navigate(`/projects/${currentProject.id}`)
   }
-
-  // Visualizer wall selection
-  const visualizerWall = walls.find((w) => w.id === visualizerWallId) ?? walls[0] ?? null
 
   return (
     <div className="mx-auto max-w-6xl space-y-6 pb-12">
@@ -1177,47 +1169,6 @@ export function StepByStepCalculator({ initialProject, onComplete }: StepByStepC
           {/* Results Dashboard (All 8 Core Metrics) */}
           <ResultsDashboard project={currentProject} estimate={estimate} />
 
-          {/* 2D Wall Visualizer Layout */}
-          {walls.length > 0 && (
-            <div className="rounded-xl border border-zinc-200 bg-white p-5 shadow-sm">
-              <div className="mb-4 flex flex-wrap items-center justify-between gap-3">
-                <div>
-                  <h3 className="text-base font-bold text-zinc-900">Wall Framing Visualization</h3>
-                  <p className="text-xs text-zinc-500">
-                    Interactive 3D structural model and 2D architectural CAD elevation with studs on-center, plates, headers, and rough openings.
-                  </p>
-                </div>
-                {walls.length > 1 && (
-                  <select
-                    className="rounded-md border border-zinc-200 px-3 py-1.5 text-sm font-medium text-zinc-700 focus:border-brand-500 focus:outline-none"
-                    value={visualizerWall?.id ?? ''}
-                    onChange={(e) => setVisualizerWallId(e.target.value)}
-                    aria-label="Select wall to view"
-                  >
-                    {walls.map((w) => (
-                      <option key={w.id} value={w.id}>
-                        {w.name} ({w.length} × {w.height} {lengthUnit})
-                      </option>
-                    ))}
-                  </select>
-                )}
-              </div>
-
-              <WallVisualizer
-                wall={visualizerWall}
-                openings={openings}
-                studSpacingIn={
-                  settings.studSpacing === 'custom'
-                    ? settings.customStudSpacing
-                    : Number(settings.studSpacing)
-                }
-                measurementSystem={measurementSystem}
-                topPlate={settings.topPlate}
-                propertyType={currentProject.projectType}
-                propertyConfig={currentProject.propertyConfig}
-              />
-            </div>
-          )}
 
           {/* Complete Material Takeoff Table */}
           <TakeoffTable

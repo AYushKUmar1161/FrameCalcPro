@@ -14,6 +14,8 @@ export type FramingCategory =
   | 'subfloor'
   | 'foundation'
   | 'sheathing'
+  | 'joist'
+  | 'rafter'
 
 export interface FramingElementInfo {
   id: string
@@ -28,8 +30,11 @@ export interface FramingElementInfo {
   wallId?: string
   floor?: string | number
   nominalSize?: string
-  actualDimensions?: string
+  actualDimensions?: string | { width: number; depth: number; length: number }
   takeoffKey?: string
+  source?: string
+  confidence?: number
+  assemblyGroup?: string
 }
 
 export interface LayerVisibility {
@@ -43,6 +48,7 @@ export interface LayerVisibility {
   roof: boolean
   sheathing: boolean
   foundation?: boolean
+  floorSystem?: boolean
 }
 
 export const DEFAULT_LAYERS: LayerVisibility = {
